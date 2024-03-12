@@ -1,0 +1,30 @@
+<?php
+
+return [
+    'Users',
+    'Clients',
+    'Alliance-Partners',
+    'Coordinators',
+    'Healthcoaches',
+    'MarketingHead',
+    'DiagnosticHead',
+    'SampleCollector',
+    'DataentryUser',
+    'MarketingExecutive',
+    'Roles',
+    'Video',
+    'Recipes',
+    'Reminders',
+    'Diet-Plan',
+    'Questionnaire',
+    'Appointments',
+    'Workflows',
+    'Program',
+    'Case-Sheet',
+    'Investigation',
+    'Prescription',
+    'Accounts',
+    'Leads',
+    'Discount-Coupons',
+    'Enquiries'
+];

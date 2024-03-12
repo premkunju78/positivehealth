@@ -1,0 +1,272 @@
+<template>
+    <b-card title="Update your Questionnaire">
+        <validation-observer #default="{ handleSubmit }" ref="refFormObserver">
+            <b-form ref="form" @submit.prevent="handleSubmit(onSubmit)">
+                <b-row>
+                    <b-col>
+                        <b-button v-ripple.400="'rgba(255, 255, 255, 0.15)'" type="submit" variant="primary"
+                            style="float:right" v-permission="['create-questionnaire']">
+                            Submit
+                        </b-button>
+                        <b-button v-ripple.400="'rgba(186, 191, 199, 0.15)'" type="reset" class="mr-1"
+                            variant="outline-secondary" style="float:right" @click="resetQuestionnaire">
+                            Reset
+                        </b-button>
+                    </b-col>
+                </b-row>
+                <b-row>
+                    <b-col md="4">
+                        <validation-provider #default="validationContext" name="mc-questionnaires-name"
+                            rules="required">
+                            <b-form-group label="Questionnaire Name" label-for="mc-questionnaires-name">
+                                <b-form-input :state="
+                                    getValidationState(
+                                        validationContext
+                                    )
+                                " v-model="questionnaire.name" :class="errors && errors.name ? 'is-invalid' : ''"
+                                    :area-invalid="errors && errors.name ? true : false" id="mc-questionnaires-name"
+                                    placeholder="Questionnaire Name" />
+                                <b-form-invalid-feedback v-if="errors && errors.name">
+                                    {{ errors.name[0] }}
+                                </b-form-invalid-feedback>
+                                <b-form-invalid-feedback v-else>
+                                    {{ validationContext.errors[0] }}
+                                </b-form-invalid-feedback>
+                            </b-form-group>
+                        </validation-provider>
+                    </b-col>
+                    <b-col md="4">
+                        <validation-provider #default="validationContext" name="mc-questionnaires-description"
+                            rules="required">
+                            <b-form-group label="Questionnaire Description" label-for="mc-questionnaires-description">
+                                <b-form-input :state="
+                                    getValidationState(
+                                        validationContext
+                                    )
+                                " id="mc-questionnaires-description"
+                                    :class="errors && errors.description ? 'is-invalid' : ''"
+                                    :area-invalid="errors && errors.description ? true : false"
+                                    v-model="questionnaire.description" placeholder="Questionnaire Description" />
+                                <b-form-invalid-feedback v-if="errors && errors.description">
+                                    {{ errors.description[0] }}
+                                </b-form-invalid-feedback>
+                                <b-form-invalid-feedback v-else>
+                                    {{ validationContext.errors[0] }}
+                                </b-form-invalid-feedback>
+                            </b-form-group>
+                        </validation-provider>
+                    </b-col>
+                    <b-col md="4">
+                        <validation-provider #default="validationContext" name="mc-questionnaires-type"
+                            rules="required">
+                            <b-form-group label="Form Type" label-for="mc-questionnaires-type">
+                                <v-select v-model="questionnaire.type"
+                                    :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'" :options="types"
+                                    :reduce="(val) => val.label" :clearable="true" />
+                            </b-form-group>
+                        </validation-provider>
+                    </b-col>
+                </b-row>
+                <b-row style="margin-top:2%;">
+                    <b-col cols="12">
+                        <span v-if="errors && errors.content" class="text-danger">
+                            {{ errors.content }}
+                        </span>
+                        <div id="fb-editor">
+
+                        </div>
+
+                    </b-col>
+                </b-row>
+
+            </b-form>
+        </validation-observer>
+    </b-card>
+</template>
+<style >
+ul.stage-wrap {
+    height: 458px !important;
+    overflow-y: auto !important;
+}
+</style>
+<script>
+import { BCard, BCardText, BRow, BCol, BFormGroup, BFormInput, BFormCheckbox, BForm, BButton, BFormInvalidFeedback } from 'bootstrap-vue'
+import Ripple from 'vue-ripple-directive'
+
+import { ValidationProvider, ValidationObserver } from "vee-validate";
+
+import formValidation from "@core/comp-functions/forms/form-validation";
+import { required } from "@validations";
+
+import vSelect from "vue-select";
+
+import ToastificationContent from "@core/components/toastification/ToastificationContent.vue";
+
+import $ from "jquery";
+import RateYo from 'rateyo';
+import 'rateyo/lib/cjs/rateyo.min.css';
+import 'jquery-ui/dist/jquery-ui';
+
+window.jQuery = $;
+window.$ = $;
+require("jquery-ui-sortable");
+require("formBuilder");
+require('formBuilder/dist/form-render.min.js')
+
+export default {
+    components: {
+        BCard,
+        BCardText,
+        BRow,
+        BCol,
+        BFormGroup,
+        BFormInput,
+        BFormCheckbox,
+        BForm,
+        BButton,
+        BFormInvalidFeedback,
+        vSelect,
+        ValidationProvider,
+        ValidationObserver
+    },
+    directives: {
+        Ripple,
+    },
+    props: ['id'],
+    data() {
+        const {
+            refFormObserver,
+            getValidationState,
+            resetForm
+        } = formValidation(this.resetQuestionnaireData);
+        return {
+            formRenderer: null,
+            formData: null,
+            questionnaire: {
+                name: '',
+                description: '',
+                type:'',
+                content: ''
+            },
+            formBuilder: null,
+            required,
+            errors: {},
+            types: [{
+                label: "Assessment Form",
+                id: "Assessment Form"
+            },
+            {
+                label: "Feedback Form",
+                id: "Feedback Form"
+            }],
+            refFormObserver,
+            getValidationState,
+            resetForm
+        }
+    },
+    created() {
+        this.getFormData();
+    },
+    methods: {
+        async getFormData() {
+            try {
+                const { data } = await axios.get(`/questionnaire/${this.id}`);
+                this.questionnaire.name = data.name;
+                this.questionnaire.type = data.type;
+                this.questionnaire.description = data.description;
+
+                this.formData = data.content;
+                let fields = [{
+                    label: 'Star Rating',
+                    attrs: {
+                        type: 'starRating'
+                    },
+                    icon: '🌟'
+                }
+                ];
+                let templates = {
+                    starRating: function (fieldData) {
+                        return {
+                            field: '<span id="' + fieldData.name + '">',
+                            onRender: function () {
+                                RateYo(document.getElementById(fieldData.name), { numStars: 10 })
+                            }
+                        };
+                    }
+                };
+                this.formBuilder = $('#fb-editor').formBuilder({
+                    fields,
+                    templates,
+                    formData: data.content,
+                    disabledActionButtons: ['data', 'save', 'clear'],
+                    disableFields: ['hidden', 'button'],
+                    disabledAttrs: ['access']
+                });
+            } catch (error) {
+                console.log(error)
+                this.$toast({
+                    component: ToastificationContent,
+                    props: {
+                        title: 'something went wrong contact admin',
+                        icon: "BellIcon",
+                        variant: "danger"
+                    }
+                });
+            }
+        },
+        async onSubmit() {
+            this.questionnaire.content = this.formBuilder.actions.getData()
+            alert("dsfsdf");
+            if (this.questionnaire.content.length) {
+                alert(this.questionnaire.content.length);
+                try {
+                    const { data } = await axios.post(`/questionnaire/${this.id}`, this.questionnaire);
+                    console.log(data)
+                    this.errors = {};
+
+                    this.$toast({
+                        component: ToastificationContent,
+                        props: {
+                            title: data.message,
+                            icon: "BellIcon",
+                            variant: data.success ? "success" : "danger"
+                        }
+                    });
+
+                    this.$router.replace({ name: 'questionnaires' })
+
+                } catch (error) {
+                    this.errors = error.response.data.errors;
+                }
+            } else {
+                this.errors.content = "Please create form first";
+            }
+
+
+        },
+        resetQuestionnaire() {
+            this.formBuilder.actions.clearFields();
+            this.errors = {};
+            this.resetQuestionnaireData();
+            this.questionnaire = {
+                name: '',
+                description: '',
+                content: ''
+            }
+        },
+        resetQuestionnaireData() {
+            this.questionnaire.value = {
+                name: '',
+                description: '',
+                content: ''
+            }
+        }
+    }
+
+}
+</script>
+
+<style lang="scss">
+@import "@core/scss/vue/libs/vue-select.scss";
+@import "@core/scss/vue/libs/vue-flatpicker.scss";
+</style>
