@@ -107,6 +107,13 @@
                     {{ getPlanName(program) }}
                   </small>
                 </b-col>
+                <b-col cols="12" class="d-flex prices-block mt-2" v-if="program.get_package && (is_upgraded_consultant == true || $store.state.auth.user.role_id == 2)">
+                  <ul class="prices">
+                    <li v-for="(price, month) in program.get_package.data">
+                      <span class="package-prices">&#8377;{{ price }} for {{ month }}</span>
+                    </li>
+                  </ul>
+                </b-col>
               </b-row>
             </div>
             <div class="d-flex align-items-center item-rating justify-content-center">
@@ -426,6 +433,7 @@ export default {
       package: null,
       required,
       type: "",
+      is_upgraded_consultant: false,
       category: "",
       groupPackages: [],
       readonly: false,
@@ -580,6 +588,7 @@ export default {
   },
   created() {
     this.getList();
+    this.checkIfUpgradedConsultant();
   },
   methods: {
     validateSize,
@@ -599,6 +608,8 @@ export default {
         console.log(err);
       }
       this.loading = false;
+
+      console.log(this.packages);
     },
 
     handlePaginationChange(val) {
@@ -691,6 +702,10 @@ export default {
       } catch (err) {
         console.log(err);
       }
+    },
+    async checkIfUpgradedConsultant() {
+      const { data } = await axios.get(`/consultant/${this.$store.state.auth.user.id}/is_upgrade`);
+      this.is_upgraded_consultant = data.is_upgraded;
     },
     async getUsers() {
       try {
@@ -905,6 +920,12 @@ export default {
 .ql-container {
   min-height: 100px !important;
 }
+
+.prices-block ul.prices {
+  list-style-type: circle;
+  padding-left: 1.5rem;
+}
+
 </style>
 
 <style lang="scss">

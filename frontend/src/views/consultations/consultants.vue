@@ -17,6 +17,9 @@
         <b-row :key="key">
             <b-col :sm="5" :md="4" :lg="3" :xl="3" v-for="consultant in consultants" :key="consultant.id">
                 <b-card class="ecommerce-card" style="width: 99%; height:350px" no-body>
+                    <div class="wishlist-btn-section" v-if="role === 3">
+                       <b-button :class="wishlist_consultant_ids.includes(consultant.id) ? ' filled' : ''" class="wishlist-btn" @click="makeInWishlist(consultant.id)"><feather-icon icon="HeartIcon" size="20"/></b-button>
+                    </div>
                     <!-- Product Details -->
                     <img :src="'/view/file?path=' + consultant.avatar" alt="Card image cap" class="card-img-top"
                         style="height:160px">
@@ -48,10 +51,12 @@
                                 :to="{ name: 'viewConsultant', params: { 'id': consultant.id } }">
                                 <span style="color:#fff" class="text-nowrap">Know More</span>
                             </b-button>
+                            <!--
                             <b-button variant="primary" size="sm" v-if="role === 3">
                                 <b-link style="color:#fff" class="text-nowrap"
                                     :to="{ name: 'book-appointments', params: { id: consultant.id, role: consultant.role_id } }">Consult</b-link>
                             </b-button>
+                            -->
                             <span></span>
                         </div>
                     </b-card-body>
@@ -166,7 +171,8 @@ export default {
             type: null,
             plan: null,
             recent: 'border-info text-info',
-            sort: null
+            sort: null,
+            wishlist_consultant_ids: []
         };
     },
     computed: {
@@ -194,7 +200,7 @@ export default {
     },
     created() {
         this.getList();
-        // this.getRoles();
+        this.getFavoritesConsultants();
 
     },
     methods: {
@@ -219,6 +225,10 @@ export default {
             }
             this.loading = false;
         },
+        async getFavoritesConsultants() {
+            const { data } = await axios.get("/get-favorites-consultants");                    
+            this.wishlist_consultant_ids = data.user.consultant_ids
+        },
         handlePaginationChange(val) {
             this.pagination.page = val;
             this.getList();
@@ -231,6 +241,20 @@ export default {
             this.pagination.filters.specialization = this.roleId;
             this.getList()
         },
+        async makeInWishlist(consultant_id) {
+            if(this.wishlist_consultant_ids.includes(consultant_id)) {
+                this.wishlist_consultant_ids.splice(this.wishlist_consultant_ids.indexOf(consultant_id), 1)                                                     
+            }else{
+                this.wishlist_consultant_ids.push(consultant_id)                                     
+            }
+
+            const { data } = await axios.post("/make-favorites-consultants", {
+                consultant_ids: this.wishlist_consultant_ids,
+                user_id: this.$store.state.auth.user.id
+            });
+
+            console.log(this.wishlist_consultant_ids);
+        }
 
     }
 };
@@ -245,7 +269,7 @@ export default {
 .footer-button {
     position: absolute;
     bottom: 25px;
-    left: 11%;
+    min-width: 100%
 }
 </style>
 
@@ -266,4 +290,23 @@ export default {
 .v-select.vs--single .vs__selected {
     color: #26a79d;
 }
+
+.wishlist-btn-section {
+    position: relative;
+}
+
+.wishlist-btn-section .wishlist-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent !important;
+    color: #000000 !important;
+    border: 0;    
+}
+
+.wishlist-btn.filled svg {
+    fill: #F00;
+    stroke: #F00;
+}
+
 </style>

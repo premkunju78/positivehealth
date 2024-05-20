@@ -14,9 +14,18 @@ export default [{
         //     permission: ['view-booking'],
         // },
         {
-            title: "Today's Meeting",
-            route: 'meetings',
-            permission: ['view-video-meeting'],
+            title: 'Today\'s Appointments',
+            route: 'todays-schedules',
+
+        },
+        {
+            title: 'Upcoming Appointments',
+            route: 'upcoming-schedules',
+
+        },
+        {
+            title: 'Past Appointments',
+            route: 'past-schedules',
         },
         // {
         //     title: 'Availability',
@@ -30,29 +39,54 @@ export default [{
         //     permission: ['view-workflows'],
         // },
         {
-            title: 'Today Schedules',
-            route: 'todayWorkflowSchedules',
-        },
-        {
-            title: 'Session schedules',
-            route: 'workflowschedules',
-        },
-        {
             title: 'Calendar',
             route: 'workflowcalendars',
+        },
+        {
+            title: 'Workshop Calendar',
+            route: 'workshopcalendars',
         },
     ],
 },
 {
-    title: 'Medical',
+    title: 'My Subscriptions',
     icon: 'PlusCircleIcon',
     children: [
+        {
+            title: 'Diet',
+            route: 'diet-plan',
+            permission: ['view-diet-plan']
+        },
+        {
+            title: 'Recipe',
+            route: 'recipes',
+            permission: ['view-recipes']
+        },
+        {
+            title: 'My Video'
+        },
+        {
+            title: 'PreRecorded Video',
+            route: 'video',
+        },
+        {
+            title: 'Groups',
+            route: 'groups',
+        },
         {
             title: 'Forms',
             route: 'questionnaires',
             permission: ['view-questionnaire'],
 
         },
+    ],
+
+},
+{
+    title: 'My Records',
+    icon: 'TargetIcon',
+    permission: ['view-diet-plan'],
+    children: [
         {
             title: 'Questionnaire',
             route: 'htmlquestionnaires',
@@ -67,48 +101,33 @@ export default [{
             route: 'clientInvestigation',
             permission: ['view-investigation'],
         },
-    ],
-
-},
-
-{
-    title: 'Diet',
-    icon: 'TargetIcon',
-    permission: ['view-diet-plan'],
-    children: [
-
         {
-            title: 'Plan',
+            title: 'Case Notes',
             route: 'diet-plan',
             permission: ['view-diet-plan']
-        },
-        {
-            title: 'Recipe',
-            route: 'recipes',
-            permission: ['view-recipes']
-        },
+        }
     ],
 
 },
-{
-    title: 'Video',
-    icon: 'VideoIcon',
-    permission: ['view-video'],
-    children: [
-        {
-            title: 'My Video'
-        },
-        {
-            title: 'PreRecorded Video',
-            route: 'video',
-        },
-        {
-            title: 'Groups',
-            route: 'groups',
-        },
+// {
+//     title: 'Video',
+//     icon: 'VideoIcon',
+//     permission: ['view-video'],
+//     children: [
+//         {
+//             title: 'My Video'
+//         },
+//         {
+//             title: 'PreRecorded Video',
+//             route: 'video',
+//         },
+//         {
+//             title: 'Groups',
+//             route: 'groups',
+//         },
 
-    ],
-},
+//     ],
+// },
 // {
 //     title: 'Investigations',
 //     icon: 'FileIcon',
@@ -122,10 +141,15 @@ export default [{
 //     permission: ['view-prescription'],
 // },
 {
-    title: 'League Consultants',
-    route: 'Consultations',
+    title: 'Health Team',
     icon: 'UsersIcon',
     permission: ['view-consultations'],
+    children: [
+        {
+            title: 'My Favourite',
+            route: 'Consultations'
+        }
+    ],
 },
 
 {
@@ -151,7 +175,7 @@ export default [{
 },
 
 {
-    title: 'General',
+    title: 'Settings',
     icon: 'BookOpenIcon',
     children: [
         {
@@ -174,6 +198,28 @@ export default [{
             title: 'Feedback',
             route: 'feedback',
         },
+    ],
+},
+{
+    title: 'Orders',
+    icon: 'CreditCardIcon',
+    children: [
+        {
+            title: 'Diagnostics',
+            route: 'reminders',
+        },
+        {
+            title: 'Insurance',
+            route: 'reminders',
+        },
+        {
+            title: 'Invoices',
+            route: 'reminders',
+        },
+        {
+            title: 'Store',
+            route: 'reminders'
+        }
     ],
 },
 

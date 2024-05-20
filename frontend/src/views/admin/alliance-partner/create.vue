@@ -174,7 +174,7 @@
                 </b-form-group>
               </b-col>
               <!-- URL -->
-              <b-col cols="12" md="6">
+              <b-col cols="12" md="4">
                 <validation-provider
                   #default="validationContext"
                   name="URL"
@@ -216,6 +216,22 @@
                   ></a>
                   Copy
                 </b-button>
+              </b-col>
+              <b-col cols="12" md="4">
+                <!-- Percentage -->
+                <validation-provider #default="validationContext" name="Percentage" rules="required">
+                  <b-form-group label="Percentage" label-for="percentage">
+                    <b-form-input id="percentage" v-model="userData.percentage" type="number" placeholder="%"
+                      :state="getValidationState(validationContext)" :class="errors.percentage ? 'is-invalid' : ''"
+                      :area-invalid="errors.percentage ? true : false" />
+                    <b-form-invalid-feedback v-if="errors.percentage">
+                      {{ errors.percentage[0] }}
+                    </b-form-invalid-feedback>
+                    <b-form-invalid-feedback v-else>
+                      {{ validationContext.errors[0] }}
+                    </b-form-invalid-feedback>
+                  </b-form-group>
+                </validation-provider>
               </b-col>
             </b-row>
             <h4>Bank Details</h4>
@@ -756,6 +772,7 @@ export default {
         userData.append("city", this.userData.city);
         userData.append("pincode", this.userData.pincode);
         userData.append("state", this.userData.state);
+        userData.append("percentage", this.userData.percentage);
 
         if (this.id) {
           data = await axios.post(`/alliance-partners/${this.userData.id}`, userData, {

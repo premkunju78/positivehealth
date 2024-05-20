@@ -1,12 +1,12 @@
 <template>
 <div class="ecommerce-application" style="height: inherit">
-
-    <section id="ecommerce-header">
+    
+    <section id="ecommerce-header" v-if="parsed_consultant_id == false">
         <b-overlay :show="$store.state.app.shallShowOverlay" no-wrap opacity="0.5" blur="1px"></b-overlay>
         <b-card>
             <b-row class="mb-2">
                 <b-col cols="8" md="4" sm="6" class="justify-content-start mb-1 mb-md-0">
-                    <b-form-group label="Specialization Type" label-for="from_date">
+                    <b-form-group label="Role Type" label-for="from_date">
                         <v-select v-model="pagination.filters.specialization" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'" :options="specializations" :clearable="false" input-id="specialization" @input="getSpecialized" />
                     </b-form-group>
                 </b-col>
@@ -66,13 +66,35 @@
     <b-pagination v-if="pagination.total" v-model="pagination.page" :page.sync="pagination.page" :total-rows="pagination.total" :index="1" :per-page="pagination.per_page" aria-controls="video-row" align="right" @change="handlePaginationChange">
     </b-pagination>
 
-    <b-modal id="refer-consultant" ok-only ok-title="Refer" centered size="md" @hidden="resetNotes" @ok="handleOk" title="Refer Consultant" ref="refer-consultant" no-close-on-backdrop>
-        <b-row class="mb-2">
+    <b-modal id="refer-consultant" :disable-footer="consultant_referred == true ? '1' : '0'" :cancel-title="refer_confirm == false ? 'No' : 'Back'" :ok-title="refer_confirm == false ? 'Yes' : 'Refer'" centered size="md" @hidden="resetNotes" @cancel="redirectToConsultantList" @ok="handleOk" title="Refer Consultant" ref="refer-consultant" no-close-on-backdrop>
+        <b-row class="mb-2" v-if="refer_confirm == false && consultant_referred == false">
             <b-col cols="12" class="justify-content-center mb-1 mb-md-0">
-                <b-form-group label="Rferral Notes" label-for="notes">
+                <b-img
+                    fluid
+                    :src="referConfirmImg"
+                    alt="Message Sent"
+                    style="max-height: 224px;"
+                />
+                <h3>Do you want to refer {{ mappingData.consultant_name }} for {{ mappingData.consultant_specialized }} consultation!</h3>                                
+            </b-col>
+        </b-row>
+        <b-row class="mb-2" v-if="refer_confirm == true && consultant_referred == false">
+            <b-col cols="12" class="justify-content-center mb-1 mb-md-0">
+                <b-form-group label="Referral Notes" label-for="notes">
                     <b-form-textarea id="notes" v-model="mappingData.notes" :rows="4">
                     </b-form-textarea>
                 </b-form-group>
+            </b-col>
+        </b-row>
+        <b-row class="mb-2" v-if="consultant_referred == true">
+            <b-col cols="12" class="justify-content-center mb-1 mb-md-0">
+                <b-img
+                    fluid
+                    :src="msgSentImg"
+                    alt="Message Sent"
+                    style="max-height: 224px;"
+                />
+                <h3>Message Sent Successfully!</h3>                                
             </b-col>
         </b-row>
     </b-modal>
@@ -146,6 +168,7 @@ import {
     BDropdownItem,
     VBModal,
     BModal,
+    BImg,
     BFormInvalidFeedback,
     BFormInput,
     BFormTextarea,
@@ -195,6 +218,7 @@ export default {
         BDropdownItem,
         VBModal,
         BModal,
+        BImg,
         ValidationProvider,
         ValidationObserver,
         BFormInvalidFeedback,
@@ -226,10 +250,21 @@ export default {
             totalRows: 0,
             specialized: [],
             specializations: ['Medical','Wellness Provider', 'Others'],
+            parsed_consultant_id: this.$route.params.consultant_id ?? false,
+            refer_confirm: false,
+            consultant_referred: false,
+            referConfirmImg: require('@/assets/images/consultant/confirm-for-referal.png'),
+            msgSentImg: require('@/assets/images/consultant/message-sent.png'),
+            errorIconImg: require('@/assets/images/icons/error-icon.png'),
         };
     },
     directives: {
         Ripple,
+    },
+    created() {
+        if (this.parsed_consultant_id) {
+            this.getConsultant();
+        }
     },
     setup() {
         const loading = true;
@@ -318,8 +353,24 @@ export default {
             this.pagination.page = val;
             this.getList();
         },
+        async redirectToConsultantList() {
+            window.location.href = "/consultations";
+        },
+        async getConsultant() {
+            const {data} = await axios.get(`consultant/${this.parsed_consultant_id}`,{params:{slot:false}});
+            this.user = data.user;
+            this.mappingData = {
+                consultant_id: data.user.id,
+                client_id: this.id,
+                consultant_name: data.user.name,
+                consultant_specialized: data.user.specialized_in,
+                consultant_role: data.user.role_id,
+                notes: ''
+            };
 
-        openReferModal(user) {
+            this.$refs['refer-consultant'].show();
+
+        },openReferModal(user) {
             this.user = user;
             this.mappingData = {
                 consultant_id: user.id,
@@ -340,36 +391,41 @@ export default {
             this.mappingData = {};
         },
         async handleOk(bvModalEvt) {
-            bvModalEvt.preventDefault();
-            if (this.mappingData.notes) {
-                try {
-                    const {
-                        data
-                    } = await axios.post('/refer/consultant', this.mappingData);
+            bvModalEvt.preventDefault();            
+            if(this.refer_confirm == false) {
+               this.refer_confirm = true; 
+            }else{            
+                if (this.mappingData.notes && this.refer_confirm == true) {
+                    try {
+                        const {
+                            data
+                        } = await axios.post('/refer/consultant', this.mappingData);
+                        this.$toast({
+                            component: ToastificationContent,
+                            props: {
+                                title: data.message,
+                                icon: "BellIcon",
+                                variant: data.success ? "success" : "danger"
+                            }
+                        });
+                        this.consultant_referred = true;
+                        this.redirectToConsultantList();
+                        this.$nextTick(() => {
+                            //this.$refs['refer-consultant'].hide()
+                        })
+                    } catch (err) {
+                        console.log(err)
+                    }
+                } else {
                     this.$toast({
                         component: ToastificationContent,
                         props: {
-                            title: data.message,
+                            title: 'Please add some notes first',
                             icon: "BellIcon",
-                            variant: data.success ? "success" : "danger"
+                            variant: 'info'
                         }
                     });
-                    this.getList();
-                    this.$nextTick(() => {
-                        this.$refs['refer-consultant'].hide()
-                    })
-                } catch (err) {
-                    console.log(err)
                 }
-            } else {
-                this.$toast({
-                    component: ToastificationContent,
-                    props: {
-                        title: 'Please add some notes first',
-                        icon: "BellIcon",
-                        variant: 'info'
-                    }
-                });
             }
 
         },
@@ -381,8 +437,32 @@ export default {
 @import "@core/scss/vue/libs/vue-select.scss";
 @import "~@core/scss/base/pages/app-ecommerce.scss";
 </style>
+
 <style lang="scss" scoped>
 .per-page-selector {
     width: 90px;
+}
+</style>
+
+<style lang="scss">
+#refer-consultant .modal-body {
+    text-align: center;
+}
+
+#refer-consultant .modal-header {
+    display: none;
+}
+
+#refer-consultant .modal-body label {
+    text-align: left;    
+}
+
+#refer-consultant .modal-body h3 {
+    font-size: 16px;
+    color: #000000;
+}
+
+#refer-consultant___BV_modal_outer_[disable-footer="1"] .modal-footer {
+    display: none;
 }
 </style>

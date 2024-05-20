@@ -112,7 +112,7 @@
               </b-col>
 
               <!-- idproof -->
-              <b-col cols="12" md="6" class="mt-2 mb-2">
+              <b-col cols="12" md="4" class="mt-2 mb-2">
                 <!-- media -->
                 <b-media
                   no-body
@@ -175,6 +175,23 @@
                   {{ errors.idproof[0] }}
                 </b-form-invalid-feedback>
               </b-col>
+              <b-col cols="12" md="4">
+                <!-- Percentage -->
+                <validation-provider #default="validationContext" name="Percentage" rules="required">
+                  <b-form-group label="Percentage" label-for="percentage">
+                    <b-form-input id="percentage" v-model="userData.percentage" type="number" placeholder="%"
+                      :state="getValidationState(validationContext)" :class="errors.percentage ? 'is-invalid' : ''"
+                      :area-invalid="errors.percentage ? true : false" />
+                    <b-form-invalid-feedback v-if="errors.percentage">
+                      {{ errors.percentage[0] }}
+                    </b-form-invalid-feedback>
+                    <b-form-invalid-feedback v-else>
+                      {{ validationContext.errors[0] }}
+                    </b-form-invalid-feedback>
+                  </b-form-group>
+                </validation-provider>
+              </b-col>
+
             </b-row>
             <h4>Bank Details</h4>
             <b-row class="mt-2 mb-2">
@@ -570,6 +587,7 @@ export default {
         userData.append("city", this.userData.city);
         userData.append("pincode", this.userData.pincode);
         userData.append("state", this.userData.state);
+        userData.append("percentage", this.userData.percentage);
         if (this.id) {
           data = await axios.post(`/mh/${this.id}`, userData, {
             headers: {

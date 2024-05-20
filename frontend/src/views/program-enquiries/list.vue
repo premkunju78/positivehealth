@@ -46,7 +46,7 @@
           </div>
           <b-table style="min-height: 250px; margin-top: 20px" ref="refRolesTable" class="position-relative" :items="list"
             responsive :fields="computedFields" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy"
-            show-empty empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
+            show-empty empty-text="No matching records found" :sort-desc.sync="isSortDirDesc" :tbody-tr-class="rowClass">
             <!-- Column: Actions -->
             <template #cell(index)="data">
               {{ data.index + 1 }}
@@ -54,6 +54,12 @@
 
             <template #cell(enquiry_detail)="data">
               <div v-html="data.item.enquiry_detail"></div>
+            </template>
+
+            <template #cell(call_btn)="data">
+              <b-button variant="success" class="btn btn-primary ml-2" @click="callNow(data.item)">
+                <span class="text-nowrap">Call Now</span>
+              </b-button>
             </template>
 
             <template #cell(client_name)="data">
@@ -75,7 +81,7 @@
                   @change="updatestatus(data.item.id)" class="mr-1 ml-1 mt-0" inline />
                 <label class="m-0">Closed</label>
               </b-form-group>
-              <div v-if="role != 11">{{ data.item.status }}</div>
+                <b-button variant="default" class="status">{{ data.item.status }}</b-button>
             </template>
             <template #cell(actions)="data">
               <b-dropdown variant="link" no-caret v-permission="['view-enquiries']">
@@ -86,7 +92,7 @@
                   <feather-icon icon="EyeIcon" />
                   <span class="align-middle ml-50">View</span>
                 </b-dropdown-item>
-                <b-dropdown-item @click="viewAssignModal(data.item)" v-if="(role == 10) && (data.item.hc_id === null)">
+                <b-dropdown-item @click="viewAssignUserRolesModal(data.item)" v-if="role == 1">
                   <feather-icon icon="EyeIcon" />
                   <span class="align-middle ml-50">Assign</span>
                 </b-dropdown-item>
@@ -130,7 +136,7 @@
           </div>
           <b-table style="min-height: 250px; margin-top: 20px" ref="refRolesTable" class="position-relative" :items="list"
             responsive :fields="computedFields" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy"
-            show-empty empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
+            show-empty empty-text="No matching records found" :sort-desc.sync="isSortDirDesc" :tbody-tr-class="rowClass">
             <!-- Column: Actions -->
             <template #cell(index)="data">
               {{ data.index + 1 }}
@@ -138,6 +144,12 @@
 
             <template #cell(enquiry_detail)="data">
               <div v-html="data.item.enquiry_detail"></div>
+            </template>
+
+            <template #cell(call_btn)="data">
+              <b-button variant="success" class="btn btn-primary ml-2" @click="callNow(data.item)">
+                <span class="text-nowrap">Call Now</span>
+              </b-button>
             </template>
 
             <template #cell(client_name)="data">
@@ -149,8 +161,7 @@
             </template>
             <template #cell(created_at)="data">
               {{ moment(created_at).format('DD-MM-YYYY') }}
-            </template>
-            
+            </template>            
 
             <template #cell(status)="data" class="d-flex align-items-center">
               <b-form-group label="" label-cols="10" v-permission="['edit-enquiries']">
@@ -159,7 +170,7 @@
                   @change="updatestatus(data.item.id)" class="mr-1 ml-1 mt-0" inline />
                 <label class="m-0">Closed</label>
               </b-form-group>
-              <div v-if="role != 11">{{ data.item.status }}</div>
+                <b-button variant="default" class="status">{{ data.item.status }}</b-button>
             </template>
             <template #cell(actions)="data">
               <b-dropdown variant="link" no-caret v-permission="['view-enquiries']">
@@ -168,9 +179,9 @@
                 </template>
                 <b-dropdown-item @click="viewEnquiry(data.item)" v-permission="['view-enquiries']">
                   <feather-icon icon="EyeIcon" />
-                  <span class="align-middle ml-50">View {{ role }}</span>
+                  <span class="align-middle ml-50">View</span>
                 </b-dropdown-item>
-                <b-dropdown-item @click="viewAssignModal(data.item)">
+                <b-dropdown-item @click="viewAssignUserRolesModal(data.item)" v-if="role == 1">
                   <feather-icon icon="EyeIcon" />
                   <span class="align-middle ml-50">Assign</span>
                 </b-dropdown-item>
@@ -207,12 +218,47 @@
             {{ enquiry.status }}
           </div>
         </div>
+        <div class="mb-2" v-if="role == 1">
+          <label>Replied Message: </label>
+          <div>
+            {{ enquiry.comment }}
+          </div>
+        </div>
       </div>
-      <b-button class="mt-3" block @click="$bvModal.hide('enquiry-modal')">Close Me</b-button>
+      <div class="d-block text-left">
+        <div class="mb-2">
+          <textarea v-model="enquiry.comment" class="form-control" v-if="role != 1" rows="4"></textarea>
+        </div>
+      </div>
+      <div class="d-block text-left">
+        <b-button class="btn-primary" v-if="role != 1" @click="saveReply">Reply</b-button>
+      </div>
     </b-modal>
 
-    <b-modal id="assign" ref="assign" ok-only ok-title="Assign" @show="getUsersAndRoles" @hidden="resetData"
+    <b-modal id="assign" ref="assign" ok-only ok-title="Assign" @show="getHealthcoaches" @hidden="resetData"
       @ok="handleOk" centered size="lg" title="Healthcoach Assignment" no-close-on-backdrop>
+      <validation-observer #default="{ handleSubmit }" ref="refFormObserver">
+        <form ref="form" @submit.prevent="handleSubmit(onAssign)">
+          <b-row>
+            <b-col cols="12" md="12">
+              <validation-provider #default="validationContext" name="healthcoach" rules="required">
+                <b-form-group label="Select Healthcoach" label-for="healthcoach"
+                  :state="getValidationState(validationContext)">
+                  <v-select v-model="assignData.healthcoach" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                    :options="healthcoaches" :reduce="val => val.id" :clearable="false" input-id="healthcoach" />
+                  <b-form-invalid-feedback :state="getValidationState(validationContext)">
+                    {{ validationContext.errors[0] }}
+                  </b-form-invalid-feedback>
+                </b-form-group>
+              </validation-provider>
+            </b-col>
+          </b-row>
+        </form>
+      </validation-observer>
+    </b-modal>
+
+    <b-modal id="assignToUserRoles" ref="assign-to-user-roles" ok-only ok-title="Assign" @show="getUsersAndRoles" @hidden="resetData"
+      @ok="handleOk" centered size="lg" title="Assign Query" no-close-on-backdrop>
       <validation-observer #default="{ handleSubmit }" ref="refFormObserver">
         <form ref="form" @submit.prevent="handleSubmit(onAssign)">
           <b-row>
@@ -221,7 +267,7 @@
                 <b-form-group label="Select User Role" label-for="user_role"
                   :state="getValidationState(validationContext)">
                   <v-select v-model="assignData.user_role" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
-                    :options="user_roles" :reduce="val => val.id" :clearable="false" input-id="user_role" />
+                    :options="user_roles" :reduce="val => val.id" :clearable="false" input-id="user_role" @input="getUsersForRole" />
                   <b-form-invalid-feedback :state="getValidationState(validationContext)">
                     {{ validationContext.errors[0] }}
                   </b-form-invalid-feedback>
@@ -233,7 +279,7 @@
                 <b-form-group label="Select User" label-for="user"
                   :state="getValidationState(validationContext)">
                   <v-select v-model="assignData.user" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
-                    :options="users" :reduce="val => val.id" :clearable="false" input-id="user" />
+                    :options="users" :reduce="(val) => val.id" ref="user_id" input-id="user_id" />
                   <b-form-invalid-feedback :state="getValidationState(validationContext)">
                     {{ validationContext.errors[0] }}
                   </b-form-invalid-feedback>
@@ -374,6 +420,7 @@ export default {
       role: null,
       healthcoaches: [],
       user_roles: [],
+      users: [],
       assignData: {},
       moment:moment,
       activeItem: 'enquiries'
@@ -384,8 +431,8 @@ export default {
       { key: "enquiry_id", label: "Enquiry ID", sortable: true },
       { key: "client_name", label: "Name", sortable: true, client_name: true },
       { key: "client_role", label: "Role", sortable: true, client_role: true },
-      { key: "program_name", label: "Program Name", sortable: true, program_name: true },
       { key: "enquiry_detail", label: "Enquiry Details", sortable: true },
+      { key: "call_btn", label: "Call", sortable: true, hc_name: true },
       { key: "status", label: "Status", sortable: false },
       { key: "actions", label: "Actions", sortable: false },
     ];
@@ -462,6 +509,8 @@ export default {
           { key: "role_name", label: "Role", sortable: true },
           { key: "client_name", label: "Name", sortable: true, client_name: true },
           { key: "enquiry_detail", label: "Enquiry Details", sortable: true },
+          { key: "call_btn", label: "Call", sortable: true, hc_name: true },
+          { key: "status", label: "Status", sortable: false },
           { key: "actions", label: "Actions", sortable: false },
         ];
       }
@@ -498,15 +547,28 @@ export default {
     },
     async getUsersAndRoles() {
       try {
-        this.users = this.user_roles = [];
-        const { data } = await axios.get("/users/roles", {
+        this.user_roles = [];
+        const { data } = await axios.get(`/users/roles`, {
           params: {},
         });
         this.user_roles = data.user.role_list;
-        this.users = data.user.user_list;
       } catch (error) {
         console.log(error);
       }
+    },
+    async getUsersForRole() {      
+      let role_id = this.assignData.user_role;
+      try {
+        this.users = [];
+        const { data } = await axios.get(`/users/roles`, {
+          params: {
+            role_id: role_id
+          },
+        });
+        this.users = data.user.user_list;
+      } catch (error) {
+        console.log(error);
+      }      
     },
     handleAssignTo() {
       if (this.enquiryData.assignedto === "consultant") {
@@ -544,6 +606,10 @@ export default {
       this.enquiry = enquiry;
       this.$refs['assign'].show();
     },
+    viewAssignUserRolesModal(enquiry) {
+      this.enquiry = enquiry;
+      this.$refs['assign-to-user-roles'].show();
+    },
     handleOk(bvModalEvt) {
       bvModalEvt.preventDefault()
       this.$refs.refFormObserver.handleSubmit(this.onAssign);
@@ -552,7 +618,10 @@ export default {
       try {
         this.assignData.enquiry_id = this.enquiry.id;
         const { data } = await axios.post('/enquiries/hcassignment', this.assignData);
+
         this.getList();
+        this.$refs['assign-to-user-roles'].hide();
+
         this.$toast({
           component: ToastificationContent,
           props: {
@@ -561,6 +630,7 @@ export default {
             variant: data.success ? "success" : "danger"
           }
         });
+
         this.$nextTick(() => {
           this.$refs['assign'].hide()
         })
@@ -588,6 +658,46 @@ export default {
 
       this.activeItem = menuItem
     },
+    async saveReply() {
+      try {
+        const { data } = await axios.post(`/enquiries/update`, {
+          params: {
+            enquiry_id: this.enquiry.id, 
+            enquiry_comment: this.enquiry.comment
+          },
+        });
+
+        this.getList('enquiries');
+        this.$bvModal.hide("enquiry-modal");        
+
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: data.message,
+            icon: "AlertTriangleIcon",
+            variant: data.success ? "success" : "danger",
+          },
+        });
+        
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    rowClass (item, type) {
+      if(item && type === 'row') {
+        if(item.replied == 0 && item.assign_to == 0) {
+          return 'box-danger';
+        }else if(item.replied == 0 && item.assign_to != 0){
+          return 'box-warning';
+        }else if(item.replied != 0 && item.assign_to != 0){
+          return 'box-success';
+        }else{
+          return null;
+        }
+      }else{
+        return null;
+      }
+    }
   },
 };
 </script>
@@ -609,4 +719,23 @@ export default {
 span.badge.badge-primary.small {
   font-size: 10px;
 }
+
+tr.box-danger button.status {
+  background: #f00!important;
+  color: #ffffff!important;
+  min-width: 134px!important;
+}
+
+tr.box-success button.status {
+  background: #008000!important;
+  color: #000000!important;
+  min-width: 134px!important;
+}
+
+tr.box-warning button.status {
+  background: #FFFF00!important;
+  color: #000000!important;
+  min-width: 134px!important;
+}
+
 </style>

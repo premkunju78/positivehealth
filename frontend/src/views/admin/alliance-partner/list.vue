@@ -84,6 +84,12 @@
           </div>
         </template>
 
+        <template #cell(name)="data">
+          <div class="text-nowrap">
+            <p>{{ data.item.name }}<br/>({{ data.item.company_name }})</p>
+          </div>
+        </template>
+
         <template #cell(coordinators)="data">
           <div class="text-nowrap">
             <p class="align-text-top text-capitalize m-0" v-for="name in data.item.coordinators">
@@ -124,6 +130,17 @@
               <span class="align-middle ml-50">View Clients</span>
             </b-dropdown-item>
 
+            <b-dropdown-item v-if="$store.getters.user.role_id == 10 || $store.getters.user.role_id == 1" @click="renderUpgradedConsultants(data.item.id)">
+              <feather-icon icon="UserPlusIcon" />
+              <span class="align-middle ml-50">Assign League Counsltants</span>
+            </b-dropdown-item>
+
+            <b-dropdown-item v-if="$store.getters.user.role_id == 10 || $store.getters.user.role_id == 1"
+              @click="viewAssigndhModal(data.item)">
+              <feather-icon icon="UsersIcon" />
+              <span class="align-middle ml-50">Assign Diagnostic Partner</span>
+            </b-dropdown-item>
+
             <b-dropdown-item :to="{
               name: 'edit-partner',
               params: { id: data.item.id, user: data.item },
@@ -156,6 +173,91 @@
         align="right" @change="handlePaginationChange">
       </b-pagination>
     </b-card>
+
+    <b-modal id="assigndh" ref="assigndh" ok-only ok-title="Close"
+      @show="getDiagnosticpartners" @hidden="resetDhData" centered size="lg" title="Diagnistic Partner Assignment"
+      no-close-on-backdrop hide-footer>
+      <validation-observer #default="{ handleSubmit }" ref="observer">
+        <form ref="assigndhform" @submit.prevent="handleSubmit(onDhAssign)">
+          <b-row>
+            <!--
+            <b-col cols="10">
+              <b-form-group label="Search by address / pincode" label-for="searchdh">
+                <b-form-input id="searchdh" v-model="dhData.search" />
+              </b-form-group>
+            </b-col>
+            <b-col cols="2">
+              <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
+                :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="button" @click="getDiagnosticpartners()">
+                Search
+              </b-button>
+            </b-col>
+            -->
+            <b-col cols="12">
+              <validation-provider #default="validationContext" name="diagnosticpartner" rules="required">
+                <b-form-group label="Select Diagnistic Partner" label-for="diagnosticpartner"
+                  :state="getValidationState(validationContext)">
+                  <v-select v-model="dhData.dh_id" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                    :options="diagnosticpartners" :reduce="(val) => val.id" :clearable="false"
+                    input-id="diagnosticpartners" />
+                  <b-form-invalid-feedback :state="getValidationState(validationContext)">
+                    {{ validationContext.errors[0] }}
+                  </b-form-invalid-feedback>
+                </b-form-group>
+              </validation-provider>
+            </b-col>
+          </b-row>
+          <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
+            :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="submit">
+            Assign
+          </b-button>
+        </form>
+      </validation-observer>
+      <!--
+      <b-table style="min-height: 250px;margin-top:10px" ref="refRolesTable" class="position-relative" :items="dhlist"
+        responsive :fields="dhcolumns" :totalRows="totalRows" primaryKey="index" :sort-by.sync="sortBy" show-empty
+        empty-text="No matching records found" :sort-desc.sync="isSortDirDesc" :sticky-header="true">
+        <template #cell(index)="data">
+          {{ data.index + 1 }}
+        </template>
+        <template #cell(name)="data">
+          <span class="text-primary">{{ data.item.name.toUpperCase() }}</span>
+        </template>
+        <template #cell(actions)="data">
+          <a @click="handleRemoveUser('dh', data.item.id)" style="cursor: pointer" title="remove">
+            <feather-icon icon="TrashIcon" />
+          </a>
+        </template>
+      </b-table>
+      -->
+    </b-modal>
+
+    <b-modal size="xl" id="show-league-consultant-modal" ref="show-league-consultant-modal" title="Assign League Consultant" ok-only no-close-on-backdrop ok-title="Assign Consultant" @ok="doAssignConsultant">
+      <table class="table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Consultant Name</th>
+            <th>Role Type</th>
+            <th>Sub Role</th>
+            <th>Specialization</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(consultant, index) in upgraded_consultants">
+            <td>
+              <input type="checkbox" v-model="selected_consultants" :value="consultant.id">
+            </td>
+            <td>{{ consultant.name }}</td>
+            <td>{{ consultant.specialization }}</td>
+            <td>{{ consultant.role }}</td>
+            <td>{{ consultant.specialized_in }}</td>
+            <td>{{ consultant.location }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </b-modal>
   </div>
 </template>
 
@@ -175,11 +277,23 @@ import {
   BDropdownItem,
   BPagination,
   BFormGroup,
+  VBModal,
+  BModal,
+  BFormInvalidFeedback,
+  BFormCheckbox,
 } from "bootstrap-vue";
+
+import { ValidationProvider, ValidationObserver } from "vee-validate";
 
 import vSelect from "vue-select";
 
+import formValidation from "@core/comp-functions/forms/form-validation";
+
 import ToastificationContent from "@core/components/toastification/ToastificationContent.vue";
+
+import { required } from "@validations";
+
+import moment from 'moment';
 
 export default {
   components: {
@@ -198,14 +312,28 @@ export default {
     BPagination,
     vSelect,
     BFormGroup,
+    VBModal,
+    BModal,
+    ValidationProvider,
+    ValidationObserver,
+    BFormInvalidFeedback,
+    BFormCheckbox,
   },
   data() {
+    const { refFormObserver, getValidationState, resetForm, resetObserver, observer } = formValidation(
+      this.resetData,
+      this.resetHcData,
+      this.resetDhData,
+      this.resetInchargeData
+    );
     return {
       items: [],
       perPage: 10,
       perPageOptions: [10, 25, 50, 100],
       totalRows: "",
       search: "",
+      selected_consultants: [],
+      selected_aliance_id: false,
       searchQuery: "",
       limit: "10",
       sortBy: "1",
@@ -228,13 +356,24 @@ export default {
       tableColumns: [
         { key: "id", label: "Id", sortable: true },
         { key: "name", label: "Name", sortable: true },
-        { key: "email", label: "Email", sortable: true },
+        // { key: "email", label: "Email", sortable: true },
         { key: "phone", label: "Phone", sortable: true },
         { key: "coordinators", label: "Coordinators", sortable: true },
+        { key: "diagnostichead", label: "Diagnostic Partner", sortable: true },
         { key: "group", label: "Group", sortable: true, filterByFormatted: true },
         { key: "type", label: "Sub Group", sortable: true },
         { key: "actions" },
       ],
+      upgraded_consultants: [],
+      diagnosticpartners: [],
+      dhlist: [],
+      dhData: {},
+      dhcolumns: [
+        { key: "index", label: "Sr. No.", sortable: true },
+        { key: "name", label: "Diagnostic Partner name", sortable: true },
+        { key: "actions", label: "Action", sortable: false },
+      ],
+      getValidationState,
     };
   },
   created() {
@@ -252,6 +391,7 @@ export default {
           { key: "group", label: "Group", sortable: true, filterByFormatted: true },
           { key: "type", label: "Sub Group", sortable: true },
           { key: "call", label: "Call", sortable: true },
+          { key: "actions" },
         ];
       } else if (this.$store.getters.user.role_id === 15) {
         this.tableColumns = [
@@ -333,6 +473,15 @@ export default {
     applyFilters() {
       this.getList();
     },
+    async renderUpgradedConsultants(aliance_id) {
+      const { data } = await axios.get("/consultants", {
+        params: this.pagination,
+      });
+
+      this.selected_aliance_id = aliance_id;
+      this.upgraded_consultants = data.users;
+      this.$refs["show-league-consultant-modal"].show();      
+    },
     async callNow(phone) {
       try {
         const { data } = await axios.post(`/coordinator/call/`, { phone: phone });
@@ -355,6 +504,33 @@ export default {
         });
       }
     },
+    async doAssignConsultant() {
+      try {
+        const { data } = await axios.post(`/consultants/assign/${this.selected_aliance_id}`, 
+          { 
+            consultant_ids : this.selected_consultants 
+          }
+        );
+        
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: data.message,
+            icon: "AlertTriangleIcon",
+            variant: data.success ? "success" : "danger",
+          },
+        });
+      } catch {
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: "Error while assign to AP",
+            icon: "AlertTriangleIcon",
+            variant: "danger",
+          },
+        });
+      }    
+    },
     async deleteAlliancePartner(alliancepartner) {
       if (confirm("Do you really want to delete?")) {
         try {
@@ -373,6 +549,33 @@ export default {
 
         }
       }
+    },
+    async getDiagnosticpartners() {
+      try {
+        this.diagnosticpartners = [];
+        var search = (this.dhData.search) ? this.dhData.search : '';
+        const { data } = await axios.get("/dh/list", {
+          params: { alliance_id: this.alliance.id, search: search },
+        });
+        this.diagnosticpartners = data.users;
+        this.getAssignedDiagnosticPartners();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async getAssignedDiagnosticPartners() {
+      try {
+        const { data } = await axios.get("/client/dhlist/" + this.alliance.id, {
+          params: {},
+        });
+        this.dhlist = data.diagnosticpartners;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    viewAssigndhModal(alliance) {
+      this.alliance = alliance;
+      this.$refs["assigndh"].show();
     },
     async approveAlliancePartner(alliancepartner) {
       if (confirm("Do you really want to approve?")) {
@@ -393,6 +596,39 @@ export default {
         }
       }
     },
+    resetDhData() {
+      this.dhData = {
+        dh_id: "",
+      };
+    },
+    async onDhAssign() {
+      try {
+        this.dhData.alliance_partner = this.alliance.id;
+        const { data } = await axios.post(`/coordinators/alliancepartners/${this.alliance.id}`, this.dhData);
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: data.message,
+            icon: "BellIcon",
+            variant: data.success ? "success" : "danger",
+          },
+        });
+
+        this.$nextTick(() => {
+          this.$refs["assigndh"].hide();
+          this.getAssignedDiagnosticPartners();
+          this.getDiagnosticpartners();
+          this.resetDhData();
+          this.$refs.assigndhform.reset()
+          this.$refs.assigndhform.resetValidation();
+          this.resetObserver();
+          this.$refs.observer.reset();
+        });
+        this.getList();
+      } catch (err) {
+        console.log(err);
+      }
+    }
   },
 };
 </script>

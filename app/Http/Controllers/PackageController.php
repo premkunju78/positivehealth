@@ -16,6 +16,9 @@ use App\Notifications\FreeSession;
 use App\Notifications\Callback;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
+use App\Models\Role;
+use App\Models\AlianConsultant;
+use Illuminate\Support\Facades\DB;
 
 class PackageController extends Controller
 {
@@ -27,10 +30,18 @@ class PackageController extends Controller
         $sort = ($request->sort == 'true') ?? null;
         $recent = ($request->recent == 'true') ?? null;
         $role = auth()->user()->role_id;
+        $is_upgraded_consultant = false;
 
+        $is_current_user_consultant = Role::where('id', auth()->user()->role_id)->value('is_consultant');
+        $aliance_pid = auth()->user()->id;
+        if ($is_current_user_consultant) {
+            $aliance_pid = AlianConsultant::where('consultant_id', auth()->user()->id)->value('aliance_id');
+            $is_upgraded_consultant = UserDetail::where('user_id', auth()->user()->id)->value('is_upgraded');
+        }
+        
         $packages =  Package::when($recent, function ($q) {
-            $q->orderBy('id', 'asc');
-        })
+                $q->orderBy('id', 'asc');
+            })
             ->when($sort == true, function ($q) {
                 $q->orderBy('title');
             })->when(($sort != true && !$recent), function ($q) {
@@ -39,9 +50,12 @@ class PackageController extends Controller
             ->when($plan, function ($q) use ($plan) {
                 $q->whereRaw('json_contains(plans, \'["' . $plan . '"]\')');
             })
-            ->when($role, function ($q) use ($role) {
-                if ($role == 2) {
+            ->when($role, function ($q) use ($role, $aliance_pid, $is_current_user_consultant, $is_upgraded_consultant) {
+                if ($role == 2 || ($is_current_user_consultant && $is_upgraded_consultant)) {
                     $ids = PackageUser::where('user_id', auth()->user()->id)->pluck('package_id');
+                    if ($is_current_user_consultant && $is_upgraded_consultant) {
+                        $ids = PackageUser::where('user_id', $aliance_pid)->pluck('package_id');
+                    }                    
                     $q->whereIn('id', $ids);
                 } elseif ($role == 3) {
                     $alliance_partners = \App\Models\AlianClient::where('client_id', auth()->user()->id)->pluck('aliance_id');
@@ -53,7 +67,17 @@ class PackageController extends Controller
                 $q->where('type', $type);
             })->when($category, function ($q) use ($category) {
                 $q->where('category', $category);
+            })
+            ->when($role, function($query) use($role, $aliance_pid, $is_current_user_consultant, $is_upgraded_consultant) {
+
+                if ($role == 2 || ($is_current_user_consultant && $is_upgraded_consultant)) {
+                    $query
+                    ->with('get_package', function($query) use($aliance_pid) {
+                        $query->where('user_id', '=', $aliance_pid);
+                    });            
+                }
             });
+
         $p1 = clone $packages;
 
         return response()->json([
@@ -181,6 +205,16 @@ class PackageController extends Controller
 
     public function show($id)
     {
+        $role = auth()->user()->role_id;
+        $is_upgraded_consultant = false;
+
+        $is_current_user_consultant = Role::where('id', auth()->user()->role_id)->value('is_consultant');
+        $aliance_pid = auth()->user()->id;
+        if ($is_current_user_consultant) {
+            $aliance_pid = AlianConsultant::where('consultant_id', auth()->user()->id)->value('aliance_id');
+            $is_upgraded_consultant = UserDetail::where('user_id', auth()->user()->id)->value('is_upgraded');
+        }
+
         if (in_array(auth()->user()->role_id, [2])) {
             $package = Package::where('packages.id', $id)
                 ->join('package_users', 'packages.id', '=', 'package_users.package_id')
@@ -221,9 +255,30 @@ class PackageController extends Controller
             $ap_costs = PackageUser::where('package_id', $id)->join('users', 'package_users.user_id', '=', 'users.id')->join('user_details', 'package_users.user_id', '=', 'user_details.user_id')->where('users.role_id', 2)->select('user_details.company_name as ap_name', 'package_users.*')->get();
         }
 
-        if ($package) {
+        if ($package) {            
+            $package->shareable_link = urlencode(url('/pg/'.base64_encode($package->id).'/'.base64_encode(auth()->user()->id)));
+            $package->shareable_link_core = url('/pg/'.base64_encode($package->id).'/'.base64_encode(auth()->user()->id));
+            $package->encoded_title = urlencode($package->title);
+
+            if (empty($package->cost) && !empty($package->plans)) {
+                $final_cost = array_combine($package->plans, $package->cost);
+            }
+
+            if (($role == 2 || ($is_current_user_consultant && $is_upgraded_consultant)) && is_array($package->plans)) {
+                $aliance_package_data = PackageUser::where('package_id', $package->id)->where('user_id', $aliance_pid)->value('data');
+                if ($aliance_package_data) {
+                    $final_cost = array_combine($package->plans, $aliance_package_data);
+                }
+            }
+
+            if (isset($final_cost)) {
+                $package->final_cost = $final_cost;
+            }
+                
+
             return response()->json(['success' => true, 'package' => $package, 'type' => 'success', 'request_callback_data' => $request_callback_data, 'ap_costs' => $ap_costs, 'userInfo' => (!empty($userInfo)) ? $userInfo : []]);
         }
+
         return response()->json(['success' => false, 'message' => 'Program not found in storage', 'type' => 'danger']);
     }
 
@@ -422,5 +477,14 @@ class PackageController extends Controller
         Notification::route('mail', "admin@prajanaawelltech.com")->notify(new Callback($userInfo, $packageInfo));
 
         return response()->json(['success' => true, 'data' => $userInfo, 'message' => 'Thank you, We would get back to you within 48 hours']);
+    }
+
+    public function loadProgramForFrontend(Request $request, $package_id, $user_id) {
+        $package_id = base64_decode($package_id);
+        $user_id = base64_decode($user_id);
+        
+        $package = Package::find($package_id);
+
+        return view("package-detail", compact('package'));
     }
 }

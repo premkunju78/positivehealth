@@ -163,7 +163,7 @@
           <b-col md="6" v-if="role !== 1">
             <validation-provider #default="validationContext" name="Address" rules="required">
               <b-form-group label-for="address" label="Address">
-                <b-form-textarea id="address" v-model="userData.address" rows="3" placeholder="address"
+                <b-form-textarea id="address" v-model="userData.address" rows="4" placeholder="address"
                   :state="getValidationState(validationContext)" />
                 <b-form-invalid-feedback>
                   {{ validationContext.errors[0] }}
@@ -179,6 +179,16 @@
               <b-form-group label-for="city" label="City">
                 <b-form-input id="city" v-model="userData.city" :state="getValidationState(validationContext)"
                   placeholder="city" />
+                <b-form-invalid-feedback>
+                  {{ validationContext.errors[0] }}
+                </b-form-invalid-feedback>
+              </b-form-group>
+            </validation-provider>
+
+            <validation-provider #default="validationContext" name="ReferralCode" rules="required">
+              <b-form-group label-for="referralcode" label="ReferralCode">
+                <b-form-input id="referralcode" v-model="userData.referralcode" :state="getValidationState(validationContext)"
+                  placeholder="Referral Code" readonly="true" />
                 <b-form-invalid-feedback>
                   {{ validationContext.errors[0] }}
                 </b-form-invalid-feedback>

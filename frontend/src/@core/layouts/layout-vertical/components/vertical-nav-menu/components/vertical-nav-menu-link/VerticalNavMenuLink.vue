@@ -2,9 +2,10 @@
   <li
     v-if="canViewVerticalNavMenuLink(item)"
     class="nav-item"
+    :custom-class='item.classes' 
     :class="{
       'active': isActive,
-      'disabled': item.disabled
+      'disabled': item.disabled,
     }"
   >
     <b-link
@@ -21,6 +22,7 @@
       >
         {{ item.tag }}
       </b-badge>
+      <feather-icon v-if="item.icon_right" :icon="item.icon_right || 'CircleIcon'" />
     </b-link>
   </li>
 </template>

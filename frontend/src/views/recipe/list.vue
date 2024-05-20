@@ -160,7 +160,7 @@
 
             <b-table style="min-height:250px" ref="refRolesTable" class="position-relative" :items="recipes" responsive
                 :fields="columns" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy" show-empty
-                empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
+                empty-text="No matching records found" :sort-desc.sync="isSortDirDesc" :tbody-tr-class="rowClass">
                 <!-- Column: Actions -->
                 <template #cell(index)="data">
                     {{ (data.index + 1) + ((pagination.page - 1) * pagination.per_page) }}
@@ -278,7 +278,31 @@
                         </a>
                     </template>
                 </b-table>
+            </b-modal>
 
+            <b-modal id="recipes-actions-modal" size="sm" ref="actions-recipes-modal" ok-only hide-footer no-close-on-backdrop>
+                <div class="recipes-first-step lock-mode" v-if="recipes_paid == false">
+                    <b-img
+                        fluid
+                        :src="recipesCoverImg"
+                        alt="Message Sent"
+                        style="max-height: 224px; margin-bottom: 1rem;"
+                    />
+                    <h4 class="header">To view this, avail a free consultation <br/> with our dietitian</h4>                
+                    <ul class="btn-list">
+                        <li><a href="javascript:void();" @click="sendEnquiry" class="btn btn-primary">Ok</a></li>
+                        <li><a href="javascript:void();" class="btn btn-success">Cancel</a></li>
+                    </ul>
+                </div>
+                <div class="recipes-second-step" v-if="recipes_paid == true">
+                    <b-img
+                        fluid
+                        :src="msgSentImg"
+                        alt="Message Sent"
+                        style="max-height: 224px; margin-bottom: 1rem;"
+                    />
+                    <h4 class="header">Our team will connect with you within 24 working hours</h4>
+                </div>
             </b-modal>
         </b-card>
     </div>
@@ -377,7 +401,11 @@ export default {
             },
             partners: [],
             clients: [],
-            tags: []
+            tags: [],
+            recipes_paid: false,
+            msgSentImg: require('@/assets/images/consultant/message-sent.png'),
+            errorIconImg: require('@/assets/images/icons/error-icon.png'),
+            recipesCoverImg:  require('@/assets/images/alerts/recipes-cover.png')
 
         }
     },
@@ -608,7 +636,11 @@ export default {
         },
         viewRecipeModal(recipe) {
             this.recipe = recipe;
-            this.$refs['viewpdf'].show();
+            if(recipe.id > 38) {
+                this.$refs['actions-recipes-modal'].show();            
+            }else{
+                this.$refs['viewpdf'].show();                            
+            }
         },
         viewUserModal(recipe) {
             this.recipe = recipe;
@@ -708,7 +740,9 @@ export default {
             }
 
         },
-
+        async sendEnquiry(){
+            this.recipes_paid = true;
+        },
         async handleRemoveUser(type, id) {
             try {
                 const { data } = await axios.delete(`/assignment/${id}/user?type=${type}`);
@@ -732,7 +766,15 @@ export default {
                 });
             }
         },
-
+        rowClass (item, type) {
+          if(item && type === 'row') {
+            if(item.id > 38) {
+              return 'row-blocked';
+            }
+          }else{
+            return null;
+          }
+        }
     }
 }
 
@@ -753,5 +795,35 @@ export default {
     min-height: 200px !important;
     max-height: 300px !important;
     overflow-y: auto;
+}
+
+#recipes-actions-modal .modal-header {
+  background: transparent;
+  margin-bottom: -2.5rem;
+}
+
+#recipes-actions-modal .modal-header h5 {
+  display: none;  
+}
+
+#recipes-actions-modal .modal-body {
+  text-align:center
+}
+
+.row-blocked {
+    background: rgba(0, 0, 0, 0.2);
+    cursor: not-allowed;
+}
+
+#recipes-actions-modal button.close {
+    z-index: 11111;
+}
+
+#recipes-actions-modal .btn-list {
+    padding-left: 0;
+    list-style-type: none;
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
 }
 </style>

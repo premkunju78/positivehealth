@@ -68,16 +68,16 @@ export default [{
             route: 'dh',
             permission: ['view-diagnostichead'],
         },
-        {
-            title: 'Sample Collectors',
-            route: 'samplecollector',
-            permission: ['view-samplecollector'],
-        },
-        {
-            title: 'Data Entry User',
-            route: 'dataentryuser',
-            permission: ['view-dataentryuser'],
-        },
+        // {
+        //     title: 'Sample Collectors',
+        //     route: 'samplecollector',
+        //     permission: ['view-samplecollector'],
+        // },
+        // {
+        //     title: 'Data Entry User',
+        //     route: 'dataentryuser',
+        //     permission: ['view-dataentryuser'],
+        // },
     ],
 },
 {
@@ -158,6 +158,10 @@ export default [{
         route: 'viewSchedules',
         permission: ['view-availability']
     },
+    {
+        title: 'Workshop Calendar',
+        route: 'workshopcalendars',
+    },
     ],
 
 },
@@ -175,6 +179,12 @@ export default [{
         {
             title: 'Sub-Category',
             route: 'testItem',
+            permission: ['create-investigation-config'],
+
+        },
+        {
+            title: 'Bookings',
+            route: 'all-investigations',
             permission: ['create-investigation-config'],
 
         },

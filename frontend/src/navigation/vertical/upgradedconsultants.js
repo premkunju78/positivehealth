@@ -15,19 +15,30 @@ export default [{
 
     },
     {
-        title: 'Schedules',
-        route: 'schedules',
+        title: 'Today\'s Appointments',
+        route: 'todays-schedules',
         permission: ['view-appointments'],
 
     },
     {
-        title: "Today's Meeting",
-        route: 'meetings',
-        permission: ['view-video-meeting'],
+        title: 'Upcoming Appointments',
+        route: 'upcoming-schedules',
+        permission: ['view-appointments'],
+
     },
     {
-        title: 'Session schedules',
-        route: 'workflowschedules',
+        title: 'Past Appointments',
+        route: 'past-schedules',
+        permission: ['view-appointments'],
+
+    },
+    {
+        title: 'Calendar',
+        route: 'workflowcalendars',
+    },
+    {
+        title: 'Workshop Calendar',
+        route: 'workshopcalendars',
     },
     ],
 
@@ -136,15 +147,22 @@ export default [{
         },
         {
             title: 'Queries',
-            route: 'enquiries',
+            children: [
+                {
+                    title: 'Ask Query',
+                    route: 'ask-query',
+                },
+                {
+                    title: 'List',
+                    route: 'enquiries',
+                },
+            ]
         },
         {
             title: 'Testimonials',
         },
     ],
 },
-
-
 {
     title: 'Affirmations',
     icon: 'TypeIcon',

@@ -27,6 +27,57 @@ export default [{
     ],
 },
 {
+    title: 'Diagnostics',
+    icon: 'ActivityIcon',
+    permission: ['view-samplecollector'],
+    children: [
+        {
+            title: 'Investigation Item',
+            route: 'items-investigations',
+            permission: ['view-samplecollector'],
+        },
+        {
+            title: 'Health Packages',
+            route: 'items-healthpackages',
+            permission: ['view-samplecollector'],
+        },
+        {
+            title: 'Onsite Tests',
+            route: 'items-onsitetests',
+            permission: ['view-samplecollector'],
+        },
+        {
+            title: 'Centres',
+            route: 'items-centres',
+            permission: ['view-samplecollector'],
+        }
+    ],
+},
+{
+    title: 'Investigation',
+    icon: 'PlusSquareIcon',
+    permission: ['view-samplecollector'],
+    children: [
+        {
+            title: 'Bookings',
+            route: 'all-investigations',
+            permission: ['view-samplecollector'],
+
+        },
+    ],
+},
+{
+    title: 'General',
+    icon: 'SettingsIcon',
+    children: [
+        {
+            title: 'Offers & Coupons',
+            route: 'offersandcoupons',
+            permission: ['view-samplecollector'],
+        }
+    ],
+},
+{
     title: 'Settings',
     icon: 'SettingsIcon',
     children: [{

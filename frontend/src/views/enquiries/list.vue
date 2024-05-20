@@ -14,10 +14,10 @@
       </ul>
       -->
     
-      <div class="tab-content py-3" id="myTabContent">
+      <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade" :class="{ 'active show': isActive('queries') }" id="queries">
-          <!-- Table Top -->
-          <div v-permission="['create-enquiries']">
+          
+          <div v-permission="['create-enquiries']" v-if="$route.name == 'ask-query'">
             <validation-observer #default="{ handleSubmit }" ref="refFormObserver">
               <!-- User Info: Input Fields -->
               <b-form @submit.prevent="handleSubmit(onSubmit)">
@@ -44,6 +44,9 @@
               </b-form>
             </validation-observer>
           </div>
+
+          <div class="table-init"  v-if="$route.name != 'ask-query'">
+
           <b-table style="min-height: 250px; margin-top: 20px" ref="refRolesTable" class="position-relative" :items="list"
             responsive :fields="computedFields" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy"
             show-empty empty-text="No matching records found" :sort-desc.sync="isSortDirDesc" :tbody-tr-class="rowClass">
@@ -81,7 +84,9 @@
                   @change="updatestatus(data.item.id)" class="mr-1 ml-1 mt-0" inline />
                 <label class="m-0">Closed</label>
               </b-form-group>
-              <div v-if="role != 11">{{ data.item.status }}</div>
+              <div>
+                <b-button variant="default" class="status">{{ data.item.status }}</b-button>
+              </div>
             </template>
             <template #cell(actions)="data">
               <b-dropdown variant="link" no-caret v-permission="['view-enquiries']">
@@ -92,8 +97,8 @@
                   <feather-icon icon="EyeIcon" />
                   <span class="align-middle ml-50">View</span>
                 </b-dropdown-item>
-                <b-dropdown-item @click="viewAssignUserRolesModal(data.item)" v-if="role == 1">
-                  <feather-icon icon="EyeIcon" />
+                <b-dropdown-item @click="viewAssignUserRolesModal(data.item)" v-if="role == 1 && data.item.assign_to == 0">
+                  <feather-icon icon="UserPlusIcon" />
                   <span class="align-middle ml-50">Assign</span>
                 </b-dropdown-item>
               </b-dropdown>
@@ -102,105 +107,17 @@
           <b-pagination v-if="pagination.total" v-model="pagination.page" :page.sync="pagination.page"
             :total-rows="pagination.total" :index="1" :per-page="pagination.per_page" aria-controls="package-row"
             align="right" @change="handlePaginationChange">
-          </b-pagination>      
-        </div>
+          </b-pagination>
 
-        <div class="tab-pane fade" :class="{ 'active show': isActive('enquiries') }" id="enquiries">
-          <!-- Table Top -->
-          <div v-permission="['create-enquiries']">
-            <validation-observer #default="{ handleSubmit }" ref="refFormObserver">
-              <!-- User Info: Input Fields -->
-              <b-form @submit.prevent="handleSubmit(onSubmit)">
-                <b-row class="d-flex justify-content-center">
-                  <b-col cols="20" md="12">
-                    <h4>Enquiry Details</h4>
-                    <!-- First Name -->
-                    <validation-provider #default="validationContext" name="Enquiry Details" rules="required">
-                      <quill-editor id="description" v-model="enquiryData.enquiry_detail" :options="editorOption" rows="4" />
-                      <b-form-invalid-feedback :state="getValidationState(validationContext)">
-                        {{ validationContext.errors[0] }}
-                      </b-form-invalid-feedback>
-                    </validation-provider>
-                  </b-col>
-                </b-row>
-                <b-row>
-                  <b-col cols="12" class="mt-2">
-                    <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
-                      :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="submit">
-                      Save Changes
-                    </b-button>
-                  </b-col>
-                </b-row>
-              </b-form>
-            </validation-observer>
           </div>
-          <b-table style="min-height: 250px; margin-top: 20px" ref="refRolesTable" class="position-relative" :items="list"
-            responsive :fields="computedFields" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy"
-            show-empty empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
-            <!-- Column: Actions -->
-            <template #cell(index)="data">
-              {{ data.index + 1 }}
-            </template>
 
-            <template #cell(enquiry_detail)="data">
-              <div v-html="data.item.enquiry_detail"></div>
-            </template>
-
-            <template #cell(client_name)="data">
-              <div v-html="data.item.client_name"></div>
-            </template>
-
-            <template #cell(client_role)="data">
-              <div v-html="data.item.client_role"></div>
-            </template>
-
-            <template #cell(call_btn)="data">
-              <b-button variant="success" class="btn btn-primary ml-2" @click="callNow(data.item)">
-                <span class="text-nowrap">Call Now</span>
-              </b-button>
-            </template>
-
-            <template #cell(created_at)="data">
-              {{ moment(created_at).format('DD-MM-YYYY') }}
-            </template>
-            
-
-            <template #cell(status)="data" class="d-flex align-items-center">
-              <b-form-group label="" label-cols="10" v-permission="['edit-enquiries']">
-                <label class="m-0">Open</label>
-                <b-form-checkbox v-model="data.item.status" value="Closed" name="check-button" switch
-                  @change="updatestatus(data.item.id)" class="mr-1 ml-1 mt-0" inline />
-                <label class="m-0">Closed</label>
-              </b-form-group>
-              <div v-if="role != 11">{{ data.item.status }}</div>
-            </template>
-            <template #cell(actions)="data">
-              <b-dropdown variant="link" no-caret v-permission="['view-enquiries']">
-                <template #button-content>
-                  <feather-icon icon="MoreVerticalIcon" size="16" class="align-middle text-body" />
-                </template>
-                <b-dropdown-item @click="viewEnquiry(data.item)" v-permission="['view-enquiries']">
-                  <feather-icon icon="EyeIcon" />
-                  <span class="align-middle ml-50">View</span>
-                </b-dropdown-item>
-                <b-dropdown-item @click="viewAssignUserRolesModal(data.item)" v-if="role == 1">
-                  <feather-icon icon="EyeIcon" />
-                  <span class="align-middle ml-50">Assign</span>
-                </b-dropdown-item>
-              </b-dropdown>
-            </template>
-          </b-table>
-          <b-pagination v-if="pagination.total" v-model="pagination.page" :page.sync="pagination.page"
-            :total-rows="pagination.total" :index="1" :per-page="pagination.per_page" aria-controls="package-row"
-            align="right" @change="handlePaginationChange">
-          </b-pagination>      
-        </div>      
+        </div>
       </div>
 
     </div>
 
     <b-modal id="enquiry-modal" hide-footer>
-      <template #modal-title> Enquiry Info </template>
+      <template #modal-title> Query Info </template>
       <div class="d-block text-left">
         <div class="mb-2" v-if="role != '3'">
           <label>Client: </label>
@@ -208,7 +125,7 @@
         </div>
         <div class="mb-2">
           <label>Enquiry Detail: </label>
-          <div v-html="enquiry.enquiry_detail"></div>
+          <div v-html="enquiry.enquiry_details"></div>
         </div>
         <div class="mb-2">
           <label>Posted at: </label>
@@ -220,15 +137,37 @@
             {{ enquiry.status }}
           </div>
         </div>
-      </div>
-      <div class="d-block text-left">
-        <div class="mb-2">
-          <textarea v-model="enquiry.comment" class="form-control" v-if="role != 1" rows="4"></textarea>
+        <div class="mb-2" v-if="role == 1 && enquiry.replied != 0">
+          <label>Replied Message: </label>
+          <div>
+            {{ enquiry.comment }}
+          </div>
+        </div>
+        <div class="mb-2" v-if="enquiry.replied != 0">
+          <label>Closed By: </label>
+          <div>
+            {{ enquiry.replied_by }}
+          </div>
+        </div>
+        <div class="mb-2" v-if="enquiry.replied != 0">
+          <label>Closed Date: </label>
+          <div>
+            {{ enquiry.replied_on }}
+          </div>
         </div>
       </div>
-      <div class="d-block text-left">
-        <b-button class="btn-primary" v-if="role != 1" @click="saveReply">Reply</b-button>
+ 
+      <div v-if="$store.state.auth.user.id != enquiry.user_id && enquiry.replied == 0">
+        <div class="d-block text-left">
+          <div class="mb-2">
+            <textarea v-model="enquiry.comment" class="form-control" v-if="role != 1" rows="4"></textarea>
+          </div>
+        </div>
+        <div class="d-block text-left">
+          <b-button class="btn-primary" @click="saveReply">Reply</b-button>
+        </div>
       </div>
+
     </b-modal>
 
     <b-modal id="assign" ref="assign" ok-only ok-title="Assign" @show="getHealthcoaches" @hidden="resetData"
@@ -390,6 +329,9 @@ export default {
         return this.columns;
       }
     },
+    isAddNewQueryPage() {
+      return this.$route.name == 'ask-query'
+    }
   },
   data() {
     var toolbarOptions = [
@@ -499,19 +441,22 @@ export default {
     getColumns() {
       if (this.$store.state.auth.user.role_id == 10) {
         this.columns = [
-          { key: "enquiry_id", label: "Enquiry ID", sortable: true },
+          { key: "enquiry_id", label: "Query ID", sortable: true },
           { key: "created_at", label: "Date", sortable: true },
           { key: "client_name", label: "Name", sortable: true, client_name: true },
           { key: "client_role", label: "Role", sortable: true, client_role: true },
-          { key: "enquiry_detail", label: "Enquiry Details", sortable: true },
+          { key: "enquiry_detail", label: "Details", sortable: true },
+          { key: "call_btn", label: "Call", sortable: true, hc_name: true },
+          { key: "status", label: "Status", sortable: false },
           { key: "actions", label: "Actions", sortable: false },
         ];
       }
       if (this.$store.state.auth.user.role.is_consultant == 1) {
         this.columns = [
-          { key: "enquiry_id", label: "Enquiry ID", sortable: true },
-          { key: "enquiry_detail", label: "Enquiry Details", sortable: true },
+          { key: "enquiry_id", label: "Query ID", sortable: true },
+          { key: "enquiry_detail", label: "Query Details", sortable: true },
           { key: "status", label: "Status", sortable: false },
+          { key: "actions", label: "Actions", sortable: false },
         ];
       }
     },
@@ -561,8 +506,7 @@ export default {
         this.users = data.user.user_list;
       } catch (error) {
         console.log(error);
-      }
-      
+      }      
     },
     async getHealthcoaches() {
       try {
@@ -623,7 +567,10 @@ export default {
       try {
         this.assignData.enquiry_id = this.enquiry.id;
         const { data } = await axios.post('/enquiries/hcassignment', this.assignData);
+
         this.getList();
+        this.$refs['assign-to-user-roles'].hide();
+
         this.$toast({
           component: ToastificationContent,
           props: {
@@ -632,9 +579,11 @@ export default {
             variant: data.success ? "success" : "danger"
           }
         });
+
         this.$nextTick(() => {
           this.$refs['assign'].hide()
         })
+        
       } catch (err) {
         console.log(err)
       }
@@ -685,7 +634,6 @@ export default {
       this.activeItem = menuItem
     }, 
     async saveReply() {
-
       try {
         const { data } = await axios.post(`/enquiries/update`, {
           params: {
@@ -711,8 +659,12 @@ export default {
     },
     rowClass (item, type) {
       if(item && type === 'row') {
-        if(item.replied == 0 && this.role != 1) {
+        if(item.replied == 0 && item.assign_to == 0) {
           return 'box-danger';
+        }else if(item.replied == 0 && item.assign_to != 0){
+          return 'box-warning';
+        }else if(item.replied != 0 && item.assign_to != 0){
+          return 'box-success';
         }else{
           return null;
         }
@@ -742,13 +694,27 @@ span.badge.badge-primary.small {
   font-size: 10px;
 }
 
-tr.box-danger {
-  background: #f38888!important;
+tr.box-danger button.status {
+  background: #f00!important;
+  color: #ffffff!important;
+  min-width: 134px!important;
 }
 
-tr.box-danger td, 
-tr.box-danger td button {
-  color: #000000!important;
-  font-weight: 550!important;
+tr.box-success button.status {
+  background: #008000!important;
+  color: #ffffff!important;
+  min-width: 134px!important;
 }
+
+tr.box-warning button.status {
+  background: #FFFF00!important;
+  color: #000000!important;
+  min-width: 134px!important;
+}
+
+.quill-editor .ql-container.ql-snow {
+  min-height: 400px;
+}
+
+
 </style>

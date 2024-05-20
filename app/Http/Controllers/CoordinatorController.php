@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Vimeo\Laravel\Facades\Vimeo;
 use App\Models\CoordinatorAlliancepartner;
+use App\Models\DiagnosticheadAlliance;
 use App\Services\Vi;
 
 class CoordinatorController extends Controller
@@ -241,6 +242,42 @@ class CoordinatorController extends Controller
         ]);
         try {
             if ($request->has('alliance_partner')) {
+                if ($request->has('dh_id')) {
+                    $dh_id = (int) $request->input('dh_id');
+                    $is_exists =  DiagnosticheadAlliance::where('ap_id', (int) $request->alliance_partner)->exists();
+                    if ($is_exists) {
+                        DiagnosticheadAlliance::where('ap_id', (int) $request->alliance_partner)
+                        ->update(['dh_id' => $dh_id]);
+                    }else{
+                        DiagnosticheadAlliance::insert([
+                            'dh_id' => (int) $request->dh_id,
+                            'ap_id' => (int) $request->alliance_partner
+                        ]);
+                    }
+                    
+                    return response()->json(['success' => true, 'type' => 'success',   'message' => 'Alliance Partner assigned to DP successfully']);
+                    
+                    exit();
+
+                } elseif ($request->has('client_id')) {
+                    $client_id = (int) $request->input('client_id');
+                    $is_exists = AlianClient::where('client_id', $client_id)->exists();
+                    if ($is_exists) {
+                        AlianClient::where('client_id', $client_id)
+                        ->update(['aliance_id' => (int) $request->alliance_partner]);
+                    }else{
+                        AlianClient::insert([
+                            'client_id' => $client_id,
+                            'aliance_id' => (int) $request->alliance_partner
+                        ]);
+                    }
+
+                    return response()->json(['success' => true, 'type' => 'success',   'message' => 'Alliance Partner assigned to client successfully']);
+                    
+                    exit();
+
+                } else {
+                
                 $check = CoordinatorAlliancepartner::where('alliancepartner_id', $request->alliance_partner)->first();
                 if (empty($check)) {
                     $CoordinatorAlliancepartner = CoordinatorAlliancepartner::firstOrNew(['coordinator_id' => $id, 'alliancepartner_id' => $request->alliance_partner]);
@@ -250,6 +287,8 @@ class CoordinatorController extends Controller
                     return response()->json(['success' => true, 'type' => 'success',   'message' => 'Alliance Partner assigned successfully']);
                 } else {
                     return response()->json(['success' => false, 'message' => "Coordinator already assigned to this alliance partner"]);
+                }
+
                 }
             } else {
                 return response()->json(['success' => false, 'message' => "Something went wrong please try after some time"]);

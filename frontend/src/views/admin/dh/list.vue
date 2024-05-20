@@ -34,6 +34,35 @@
         </b-row>
       </div>
 
+      <b-modal id="alliance-partners-list" ref="alliance-partners-list" ok-only centered size="md" title="Associated Alliance Partners" hide-footer no-close-on-backdrop>
+        <ul class="d-inline-block  pl-0 w-100" v-if="associated_alliance_partners">
+          <li class="d-flex w-100 mb-1" v-for="ap in associated_alliance_partners">
+            {{ ap.name }}
+          </li>
+        </ul>
+        <span class="text-danger d-block text-center" v-else><strong>No City Found</strong>!</span>
+      </b-modal>
+
+      <b-modal id="view-location-availability" ref="user-location-availability" ok-only centered size="md" title="City wise availability" hide-footer no-close-on-backdrop>
+        <ul class="d-inline-block pl-0 w-100" v-if="user_availability">
+          <li class="d-flex w-100 mb-0" v-for="location in user_availability">
+            <span class="mr-auto">{{ location.city }}</span>
+            <b-dropdown variant="link" no-caret :right="$store.state.appConfig.isRTL">
+              <template #button-content>
+                <span class="badge caps" :class="location.status === 'active' ? 'badge-success' : 'badge-danger'">
+                  {{ location.status }}
+                </span>
+              </template>
+              <b-dropdown-item @click="updateLocationAvailability(location)"">
+                <span class="align-middle ml-50" v-if="location.status === 'inactive'">Active</span>
+                <span class="align-middle ml-50" v-if="location.status === 'active'">In-Active</span>
+              </b-dropdown-item>
+            </b-dropdown>
+          </li>
+        </ul>
+        <span class="text-danger d-block text-center" v-else><strong>No City Found</strong>!</span>
+      </b-modal>
+
       <b-table
         ref="refUserListTable"
         class="position-relative"
@@ -45,7 +74,8 @@
         :totalRows="totalRows"
         show-empty
         empty-text="No matching records found"
-        :sort-desc.sync="isSortDirDesc"
+        :sort-desc.sync="isSortDirDesc" 
+         :tbody-tr-class="rowClass" 
       >
         <!-- Column: User -->
         <template #cell(user)="data">
@@ -65,10 +95,32 @@
         <template #cell(id)="data">
           {{ "DH-" + data.item.id }}
         </template>
-         <template #cell(alliancepartners)="data">
+        <template #cell(alliancepartners)="data">
           <div class="text-nowrap">
             <p class="align-text-top text-capitalize m-0" v-for="name in data.item.alliancepartners">{{ name }}</p>
           </div>
+        </template>
+
+        <template #cell(dh_status)="data">          
+
+          <b-button class="btn-sm" variant="info" @click="viewAvailability(data.item)">
+            <span class="text-nowrap">Cities Presence</span>
+          </b-button>                
+
+        </template>
+
+        <template #cell(assigned_alliance)="data">          
+
+          <b-button class="btn-sm" variant="success" @click="viewAssignedAlliance(data.item)">
+            <span class="text-nowrap">
+              <feather-icon
+                icon="EyeIcon"
+                size="16"
+                color="#FFFFFF"
+              />
+            </span>
+          </b-button>                
+
         </template>
 
         <!-- Column: Actions -->
@@ -78,14 +130,12 @@
               variant="link"
               no-caret
               :right="$store.state.appConfig.isRTL"
-              v-permission="['edit-diagnostichead']"
             >
               <template #button-content>
                 <feather-icon
                   icon="MoreVerticalIcon"
                   size="16"
                   class="align-middle text-body"
-                  v-permission="['edit-diagnostichead']"
                 />
               </template>
               <!-- <b-dropdown-item :to="{ name: 'apps-users-view', params: { id: data.item.id } }" >
@@ -98,21 +148,82 @@
                   name: 'edit-dh',
                   params: { id: data.item.id, user: data.item },
                 }"
-                v-permission="['edit-diagnostichead']"
               >
                 <feather-icon icon="EditIcon" />
                 <span class="align-middle ml-50">Edit</span>
               </b-dropdown-item>
-              <b-dropdown-item v-if="$store.getters.user.role_id == 1" @click="deleteMh(data.item)">
-                <feather-icon icon="EditIcon" />
-                <span class="align-middle ml-50">Delete</span>
+              <b-dropdown-item
+                :to="{
+                  name: 'items-investigations',
+                  query: { user_id: data.item.id },
+                }"
+                v-if="data.item.investigation_status === 'completed'"
+              >
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View Investigations</span>
               </b-dropdown-item>
               <b-dropdown-item
-                :to="{ name: 'coodinator-alliance-view', params: { id: data.item.id },query: {name: data.item.name } }"
-                v-permission="['view-dh']"
+                :to="{
+                  name: 'items-healthpackages',
+                  query: { user_id: data.item.id },
+                }"
+                v-if="data.item.healthpackage_status === 'completed'"
+              >
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View Health Packages</span>
+              </b-dropdown-item>
+              <b-dropdown-item
+                :to="{
+                  name: 'items-onsitetests',
+                  query: { user_id: data.item.id },
+                }"
+                v-if="data.item.onsites_status === 'completed'"
+              >
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View Onsite Tests</span>
+              </b-dropdown-item>
+              <b-dropdown-item
+                :to="{
+                  name: 'items-centres',
+                  query: { user_id: data.item.id },
+                }"
+                v-if="data.item.centres_status === 'completed'"
+              >
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View Centres Availability</span>
+              </b-dropdown-item>
+              <b-dropdown-item
+                :to="{
+                  name: 'samplecollector',
+                  query: { user_id: data.item.id },
+                }"
+              >
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View Sample Collector</span>
+              </b-dropdown-item>
+              <b-dropdown-item
+                :to="{
+                  name: 'dataentryuser',
+                  query: { user_id: data.item.id },
+                }"
+              >
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View DataEntry User</span>
+              </b-dropdown-item>
+
+              <!--
+              <b-dropdown-item
+                :to="{ name: 'coodinator-alliance-view', params: { id: data.item.id },query: {name: data.item.name, for_dh: true } }"
+                v-if="available_ap === true && data.item.assigned_alliance === null"
               >
                 <feather-icon icon="UsersIcon" />
-                <span class="align-middle ml-50">Assign</span>
+                <span class="align-middle ml-50">Assign AP</span>
+              </b-dropdown-item>
+              -->
+
+              <b-dropdown-item v-if="$store.getters.user.role_id == 1" @click="deleteMh(data.item)">
+                <feather-icon icon="TrashIcon" />
+                <span class="align-middle ml-50">Delete</span>
               </b-dropdown-item>
               <!-- <b-dropdown-item @click="viewUserModal(data.item)"  v-permission="['edit-coordinators']">
                 <feather-icon icon="EyeIcon" />
@@ -217,9 +328,10 @@ export default {
       tableColumns: [
         { key: "id", label: "Id", sortable: true },
         { key: "name", label: "Full Name", sortable: true },
-        { key: "gender", label: "Gender", sortable: true },
         { key: "email", label: "Email", sortable: true },
         { key: "phone", label: "Contact Number", sortable: true },
+        { key: "assigned_alliance", label: "AP", sortable: true },
+        { key: "dh_status", label: "Availability", sortable: true },
         { key: "actions" },
       ],
       ucolumns: [
@@ -227,7 +339,7 @@ export default {
         { key: "name", label: "Name", sortable: true },
         { key: "email", label: "Email", sortable: true },
         { key: "phone", label: "Contact Number", sortable: true },
-        { key: "actions", label: "Action", sortable: false },
+        { key: "assigned_alliance", label: "Alliance Partener", sortable: true },
       ],
       userData: {
         roles: [],
@@ -246,6 +358,10 @@ export default {
       getValidationState,
       resetForm,
       required,
+      availability_for: null,
+      available_ap: true,
+      user_availability: [],
+      associated_alliance_partners: [],
     };
   },
   props: {
@@ -274,6 +390,7 @@ export default {
         this.pagination.per_page = data.per_page;
         this.pagination.total = data.total;
         this.pagination.page = data.page;
+        this.available_ap = data.available_ap;
       } catch {
         toast({
           component: ToastificationContent,
@@ -300,7 +417,66 @@ export default {
         console.log(error);
       }
     },
-   
+    rowClass(item, type) {
+      if (item && type === "row") {
+        if (
+        item.investigation_status === "completed" 
+        && item.healthpackage_status === "completed" 
+        && item.onsites_status === "completed" 
+        && item.centres_status === "completed" 
+        ) {
+          return "tr-completed";
+        } else {
+          return "tr-pending";
+        }
+      } else {
+        return null;
+      }
+    },
+    async viewAvailability(record) {
+      this.availability_for = record.id;
+      this.user_availability = JSON.parse(record.available_cities);
+      this.$refs["user-location-availability"].show();
+    },
+    async updateLocationAvailability(location) {
+      try {
+        const { data } = await axios.post(`/users/update-location-availability/${this.availability_for}`,
+          { 
+            city: location.city,
+            status: location.status 
+          }
+        );
+
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: data.message,
+            icon: "EditIcon",
+            variant: data.success ? "success" : "info",
+          },
+        });
+
+        this.$refs["user-location-availability"].hide();
+        this.getList();
+
+      } catch (error) {
+        if (error.response) {
+          this.errors = error.response.data.errors;
+        }
+      }
+    },
+    async viewAssignedAlliance(record){
+      try {
+        const { data } = await axios.get(`/dh/getalliancepartners/${record.id}`);
+        this.associated_alliance_partners = data.alliancepartners;
+        this.$refs["alliance-partners-list"].show();
+
+      } catch (error) {
+        if (error.response) {
+          this.errors = error.response.data.errors;
+        }
+      }
+    },
     async deleteMh(dh) {
       if (confirm("Do you really want to delete?")) {
         try {
@@ -331,4 +507,18 @@ export default {
   max-height: 300px !important;
   overflow-y: auto;
 }
+
+.caps {
+  text-transform: capitalize;
+}
+
+.tr-pending {
+  background: beige;
+}
+
+.tr-completed {
+  background: #58cd5c54;
+  color: #000;
+}
+
 </style>

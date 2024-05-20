@@ -8,5 +8,18 @@ export default [{
     icon: 'UsersIcon',
     permission: ['view-clients'],
     route: 'clients',
+},
+{
+    title: 'Investigation',
+    icon: 'PlusSquareIcon',
+    permission: ['view-clients'],
+    children: [
+        {
+            title: 'Bookings',
+            route: 'all-investigations',
+            permission: ['view-clients'],
+
+        },
+    ],
 }
 ]

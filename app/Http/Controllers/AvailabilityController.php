@@ -98,6 +98,7 @@ class AvailabilityController extends Controller
             $availability->user_id = auth()->user()->id;
             $availability->extendedProps = ['calendar' => 'Availability'];
             $availability->frequency = $request->frequency;
+            $availability->type = $request->type;
             $availability->group = $request->group;
             $availability->attendee = $request->attendee;
             $availability->save();
@@ -128,6 +129,7 @@ class AvailabilityController extends Controller
             $availability->frequency = $request->frequency;
             $availability->group = $request->group;
             $availability->attendee = $request->attendee;
+            $availability->type = $request->type;
             $availability->save();
 
             return response()->json(['success'=>true,'message'=>'availability updated successfully']);

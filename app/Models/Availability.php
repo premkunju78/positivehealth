@@ -11,5 +11,6 @@ class Availability extends Model
 
     protected $casts = [
         'extendedProps' => 'array',
+        'type' => 'array'
     ];
 }

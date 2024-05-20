@@ -204,6 +204,29 @@
         </form>
       </validation-observer>
     </b-modal>
+
+    <b-modal id="view-reffered-to-modal" ref="view-reffered-to-modal" size="lg" hide-footer title="" no-close-on-backdrop>
+        <template #modal-title></template>
+        <div class="image-block-flex">
+          <div class="left-content">
+            <p>Dear {{ $store.state.auth.user.name }} <br/><b>{{ referred_detail.referred_by_name }}</b> had referred <b>{{ referred_detail.referred_to_name }}</b> for a specialist opinion.</p>
+            <p>You can proceed to book an appointment by clicking below button</p>
+            <p><strong>Specialization</strong><br/>{{ referred_detail.referred_to_specialized_in }}</p>
+            <ul>
+              <li v-if="$store.state.auth.user.role_id === 3">
+                <b-link class="btn btn-primary text-nowrap" :to="{name:'book-appointments', params: {id: referred_detail.referred_to_id, role: 6} }" >Consult</b-link>
+              </li>
+              <li v-if="$store.state.auth.user.role_id === 3">
+                <b-button class="btn btn-danger text-nowrap" @click="cancelReferral">Cancel</b-button>
+              </li>
+            </ul>
+          </div>
+          <div class="right-image">
+            <img :src="'/view/file?path=' + referred_detail.avatar" alt="Card image cap" class="card-img-top" style="height:200px; min-width: 150px;">
+          </div>
+        </div>
+    </b-modal>
+
   </div>
 </template>
 
@@ -331,6 +354,7 @@ export default {
         email: "",
         age: "",
       },
+      referred_detail: {},
     };
   },
   computed: {
@@ -348,6 +372,12 @@ export default {
     async fetchAffirmation() {
       const { data } = await axios.get(`affirmation/today`);
       this.affirmation = data.affirmation;
+      
+      if(data.referred_detail) {
+        this.referred_detail = data.referred_detail;
+        console.log(this.referred_detail);
+        this.$refs["view-reffered-to-modal"].show();      
+      }
     },
     referaFriend(client) {
       this.$refs["refer"].show();
@@ -368,6 +398,27 @@ export default {
       const age = Math.abs(Math.round(diff / 365.25));
       alert(age);
       this.referData.age = age;
+    },
+    async cancelReferral() {
+      try {
+        const { data } = await axios.post("/client/cancel_referral", {
+          referred_to : this.referred_detail.referred_to_id
+        });
+
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: data.message,
+            icon: "BellIcon",
+            variant: data.success ? "success" : "danger",
+          },
+        });
+        this.$nextTick(() => {
+          this.$refs["view-reffered-to-modal"].hide();
+        });
+      } catch (err) {
+        console.log(err);
+      }      
     },
     async onRefer() {
       try {
@@ -395,5 +446,33 @@ export default {
 @import "@core/scss/vue/libs/vue-flatpicker.scss";
 .custom-radio {
   margin-top: 0 !important;
+}
+
+#view-reffered-to-modal ul {
+  padding-left: 0;
+  list-style-type: none;
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+#view-reffered-to-modal ul li {
+  line-height: normal;
+}
+
+#view-reffered-to-modal ul li .btn {
+  max-width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+#view-reffered-to-modal .image-block-flex {
+  display: flex;
+  gap: 2rem;
+}
+
+#view-reffered-to-modal .image-block-flex .right-image img {
+  max-width: 200px;
 }
 </style>

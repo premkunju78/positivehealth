@@ -7,8 +7,17 @@
 
     <b-row v-if="invoiceData" class="invoice-preview">
       <!-- Col: Left (Invoice Container) -->
-      <b-col cols="10" xl="9" md="8">
-        <b-card no-body class="invoice-preview-card">
+      <b-col cols="12" xl="12" md="12">
+        <b-button
+          variant="primary"
+          @click="printInovie"
+        >
+          <feather-icon
+            icon="DownloadIcon"
+          />        
+          <span class="text-nowrap">Download Invoice</span>
+        </b-button>        
+        <b-card no-body class="invoice-preview-card mt-2" id="client-investigation-invoice">
           <!-- Header -->
           <b-card-body class="invoice-padding pb-0">
             <div
@@ -29,6 +38,13 @@
                     <logo />
                     <h3 class="text-primary invoice-logo">Prajana</h3>
                   </div>
+
+                  <address>
+                    <p><b>{{ invoiceData.consultant_clinic }}</b></p>
+                    <p>{{ invoiceData.consultant_pincode }}</p>
+                    <p>{{ invoiceData.consultant_address }}</p>
+                  </address>
+
                 </div>
                 <p class="card-text mb-25"></p>
                 <p class="card-text mb-25"></p>
@@ -37,7 +53,8 @@
 
               <!-- Header: Right Content -->
               <div class="mt-md-0 mt-2">
-                Referred by <b>{{ invoiceData.consultant }}</b>
+                <p>Referred by <b>{{ invoiceData.consultant }}</b><br/>({{ invoiceData.consultant_specialized_in }})</p>
+                <p><feather-icon icon="MailIcon" />  <span>{{ invoiceData.consultant_email }}</span></p>
                 <!-- <div class="invoice-date-wrapper">
                   <p class="invoice-date-title">Phone Number: {{ invoiceData.phone }}</p>
                 </div> -->
@@ -53,12 +70,12 @@
             <b-row class="invoice-spacing">
               <!-- Col: Invoice To -->
               <b-col cols="11" xl="6" class="p-0">
-                <h6 class="ml-1 mb-2">Client:</h6>
                 <h6 class="ml-1 mb-25">
                   {{ invoiceData.patient_name }}
                 </h6>
                 <p class="ml-1 card-text mb-25" v-if="invoiceData.dob">
-                  Age.{{ age(invoiceData.dob) }}
+                  Age.{{ age(invoiceData.dob) }} years /
+                  <b>{{ invoiceData.patient_gender }}</b>
                 </p>
                 <!-- <p class="ml-1 card-text mb-25">
                   Mobile No.{{ invoiceData.patient_phone }}
@@ -98,6 +115,9 @@
                 :fields="fields"
                 style="padding-top: 3%"
               >
+                <template #cell(ch_select)="data">
+                  <input type="checkbox" v-model="selectedTests" :value="data.item.id">
+                </template>
                 <template #cell(index)="data">
                   <span style="color: #fff">{{ data.index + 1 }}</span>
                 </template>
@@ -106,6 +126,7 @@
                     {{ data.item.name }}
                   </b-card-text>
                 </template>
+
                 <template #cell(unit)="data">
                   <validation-provider
                     #default="validationContext"
@@ -221,15 +242,25 @@
                   </p>
                 </template>
               </b-table-lite>
+
               <div
-                class="mb-4 mt-4 text-right"
+                class="mb-4 mt-4 text-center"
+              >
+                <b-button variant="primary" type="submit" class="mr-2" 
                 v-if="
                   $store.getters.user.role.id == 10 || $store.getters.user.role.id == 11
                 "
-              >
-                <!-- Action Buttons -->
-                <b-button variant="primary" type="submit" class="mr-2">
+                >
                   Save Changes
+                </b-button>
+                <b-button variant="success" type="button" class="mr-2" 
+                @click="validateSelectedTests"
+                v-if="
+                  ($store.getters.user.role.id == 3 || $store.getters.user.role.id == 17)
+                  && selectedTests.length >= 1 
+                "
+                >
+                  <span>To book your tests, download our mobile application</span>
                 </b-button>
               </div>
             </form>
@@ -317,6 +348,7 @@ export default {
   data() {
     return {
       errors: [],
+      selectedTests: [], 
       required,
       readonly: false,
       investigationDetail: null,
@@ -367,7 +399,7 @@ export default {
     });
 
     store
-      .dispatch("preview/fetchInvestigation", { id: router.currentRoute.params.id })
+      .dispatch("preview/fetchInvestigation", { id: router.currentRoute.params.id, client_id: router.currentRoute.params.client_id })
       .then((response) => {
         invoiceData.value = response.data.investigation;
         this.investigationDetail = response.data.investigation;
@@ -417,6 +449,14 @@ export default {
         ];
       }
 
+      if (this.$store.getters.user.role.id == '3') {
+        this.fields = [
+          { key: "ch_select", label: "", sortable: false, tdClass: "width-40" },
+          { key: "index", label: "#", sortable: true, tdClass: "width40" },
+          { key: "name", label: "Investigation Advice", sortable: false },
+        ];
+      }
+
     },
     async onSubmit() {
       try {
@@ -444,6 +484,34 @@ export default {
         }
       }
     },
+    printInovie() {
+      const prtHtml = document.getElementById('client-investigation-invoice').innerHTML;
+      let stylesHtml = '';
+      for (const node of [...document.querySelectorAll('link[rel="stylesheet"], style')]) {
+        stylesHtml += node.outerHTML;
+      }
+
+      const WinPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+
+      WinPrint.document.write(`<!DOCTYPE html>
+      <html>
+        <head>
+          ${stylesHtml}
+        </head>
+        <body>
+          ${prtHtml}
+        </body>
+      </html>`);
+
+      WinPrint.document.close();
+      WinPrint.focus();
+      WinPrint.print();
+      WinPrint.close();
+
+    }, 
+    async validateSelectedTests(){
+      console.log(this.selectedTests) 
+    },
   },
 };
 </script>
@@ -454,6 +522,17 @@ export default {
   text-align: center;
   background-color: #7566ed;
 }
+
+.width-40 {
+  width: 10px !important;
+  text-align: center;
+}
+
+address p {
+  margin: 0;
+  padding: 0
+}
+
 
 [dir] .table th,
 [dir] .table td {

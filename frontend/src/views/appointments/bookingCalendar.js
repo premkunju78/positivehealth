@@ -307,6 +307,8 @@ export default function bookingCalendar() {
                     var appointments = [];
                     let selecteddate = moment(data.date).format("YYYY-MM-DD");
                     let temp_selected_day = moment(selecteddate).format("dddd MMMM D");
+                    let typeOptions = data.type;
+                    console.log(typeOptions);
                     if (
                         moment(this.selecteddate).isSameOrAfter(moment().format("YYYY-MM-DD"))
                     ) {

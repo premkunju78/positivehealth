@@ -16,7 +16,7 @@ export default function useUsersList() {
     const tableColumns = [
         { key: 'id', label: 'User Id', sortable: true },
         { key: 'name', label: 'Full Name', sortable: true },
-        { key: 'email', label: 'Email', sortable: true },
+        { key: 'linked_ap', label: 'Linked AP', sortable: true },
         { key: 'specialization', label: 'Role Type', sortable: true },
         { key: 'role', label: 'Sub Role', sortable: true },
         { key: 'specialized_in', label: 'Specialization', sortable: true },

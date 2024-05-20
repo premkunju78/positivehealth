@@ -214,4 +214,36 @@ class Helpers
         return $slots;
     }
 
+    public static function sendSms($numbers, $message) {
+        $username = "admin@prajanaawelltech.com";
+        $hash = "1adde76f39dfe2a50e9fc999486b1b74b9bbf0241feb5d30e9d897f3e8e2976b";
+
+        // Config variables. Consult http://api.textlocal.in/docs for more info.
+        $test = "0";
+
+        // Data for text message. This is the text message data.
+        $sender = "HLTINF"; // This is who the message appears to be from.
+        // 612 chars or less
+        // A single number or a comma-seperated list of numbers
+        $message = urlencode($message);
+        $data = "username=".$username."&hash=".$hash."&message=".$message."&sender=".$sender."&numbers=".$numbers."&test=".$test;
+        $ch = curl_init('http://api.textlocal.in/send/?');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $result = curl_exec($ch); // This is the result from the API
+        curl_close($ch);
+
+        return $result;
+    }
+
+    public static function random_color(){
+        mt_srand((double)microtime()*1000000);
+        $c = '';
+        while(strlen($c)<6){
+            $c .= sprintf("%02X", mt_rand(0, 255));
+        }
+        return $c;
+    }    
+
 }

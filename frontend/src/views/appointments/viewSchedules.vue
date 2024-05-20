@@ -186,8 +186,10 @@ export default {
         },
       },
       list: [],
+
       package: null,
       required,
+      schedule_type: 'todays',
       type: "Create Pakage",
       groupPackages: [],
       readonly: false,
@@ -229,14 +231,32 @@ export default {
       columns,
     };
   },
-  watch: {
+  created() {    
+    if(this.$route.name == 'todays-schedules') {
+      this.schedule_type = 'todays';
+    }else if(this.$route.name == 'past-schedules') {
+      this.schedule_type = 'past';
+    }else if(this.$route.name == 'upcoming-schedules') {
+      this.schedule_type = 'upcoming';
+    }
+
+    this.getList(schedule_type);
+    this.getRoles();
+  },
+  watch:{
+    $route (to, from){
+      if(this.$route.name == 'todays-schedules') {
+        this.schedule_type = 'todays';
+      }else if(this.$route.name == 'past-schedules') {
+        this.schedule_type = 'past';
+      }else if(this.$route.name == 'upcoming-schedules') {
+        this.schedule_type = 'upcoming';
+      }
+      this.getList(schedule_type);
+    },
     "pagination.per_page": function (val) {
       this.handleFilterChange(val);
-    },
-  },
-  created() {
-    this.getList();
-    this.getRoles();
+    }
   },
   methods: {
     async getRoles() {
@@ -249,10 +269,10 @@ export default {
       }
       this.loading = false;
     },
-    async getList() {
+    async getList(schedule_type) {
       try {
         this.loading = true;
-        const { data } = await axios.post("schedules", this.pagination);
+        const { data } = await axios.post(`schedules?type=${schedule_type}`, this.pagination);
         this.packages = data.schedules;
         this.pagination.per_page = data.per_page;
         this.pagination.total = data.total;

@@ -16,4 +16,8 @@ class Package extends Model
         'months' => 'array',
         'request_callback'=>'array'
     ];
+
+    public function get_package() {
+        return $this->hasOne(PackageUser::class, 'package_id', 'id');
+    }
 }

@@ -47,25 +47,20 @@
             <b-col cols="11" class="mb-2" style="text-align: justify" v-if="program" v-html="program.description">
             </b-col>
           </b-row>
-          <b-row v-if="userInfo && userInfo.cisf == '1' || $store.state.auth.user.role_id == 2">
-            <table class="table">
+          <b-row v-if="program.final_cost">
+            <table class="table pricing-table">
               <thead>
                 <tr>
-                  <th v-if="$store.state.auth.user.role_id != 2">Alliance Partner</th>
-                  <th>Plan</th>
+                  <th>Duration</th>
+                  <th>Price</th>
                 </tr>
               </thead>
-              <tr v-for="cost in ap_costs">
-                <td v-if="$store.state.auth.user.role_id != 2">{{ cost.ap_name }}</td>
-                <td>
-                  <table class="table">
-                    <tr v-for="(data, index) in cost.data">
-                      <td>{{ index }}</td>
-                      <td>{{ data }}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
+              <tbody>
+                <tr v-for="(cost, duration) in program.final_cost">
+                  <td>{{ duration }}</td>
+                  <td>&#8377;{{ cost }}</td>
+                </tr>
+              </tbody>
             </table>
           </b-row>
 
@@ -141,13 +136,13 @@
         <img v-if=" program " class="card-img-top mt-1" :src=" '/view/file?path=' + program.image " alt="Image" />
       </b-col>
     </b-row>
-    <b-row class="mt-4">
+    <b-row class="mt-4" v-if="$store.state.auth.user.role_id != 1">
       <b-col :md="12" :sm="12" :lg="12" class="text-center"> 
-        <b-button variant="primary" class="mt-1 mb-1" @click=" programActions('reachus') " data-target="reachus">
+        <b-button variant="primary" class="mt-1 mb-1 width-144" @click=" programActions('reachus') " data-target="reachus">
           <span class="text-nowrap">Reach Us</span>
         </b-button>
 
-        <b-button variant="success" class="mt-1 mb-1" @click=" programActions('refer') " data-target="reachus">
+        <b-button variant="success" class="mt-1 mb-1 width-144" @click=" programActions('refer') " data-target="reachus">
           <span class="text-nowrap">Refer</span>
         </b-button>
 
@@ -161,9 +156,54 @@
         alt="Message Sent"
         style="max-height: 224px;"
       />
-      <h4>We will get back to you shortly</h4>
-      <b-button class="notice-btn">i</b-button>
+      <h4 class="header">We will get back to you within 24 working hours</h4>
+      <b-button type="button" class="notice-btn">i</b-button>
+      <b-button type="button" class="close-modal-btn" @click="closeProgramActionModal"><feather-icon  icon="XIcon"></feather-icon></b-button>
     </b-modal>
+
+    <b-modal id="program-share-modal" hide-footer no-close-on-backdrop>
+      <template #modal-title> Refer Program</template>
+      <div class="d-block text-left" v-if="is_upgraded == false">
+        <b-img
+          fluid
+          :src="errorIconImg"
+          alt="Message Sent"
+          style="max-height: 100px; margin-bottom: 1.5rem;"
+        />
+        <h4 class="header-notice">Uh-ho , You need to upgrade yourself  to refer !</h4>
+      </div>
+      <div class="d-block text-left" v-if="is_upgraded == true">
+        <ul class="list-inline">
+          <li> 
+            <b-button variant="default" class="mt-1 mb-1 fb-icon-btn btn-icon" @click=" programShareActions('fb') " data-target="reachus"><feather-icon  icon="FacebookIcon" size="50"></feather-icon></b-button>
+          </li>          
+          <li> 
+            <b-button variant="default" class="mt-1 mb-1 tw-icon-btn btn-icon" @click=" programShareActions('twitter') " data-target="reachus"><feather-icon  icon="TwitterIcon" size="50"></feather-icon></b-button>
+          </li>
+          <li> 
+            <b-button variant="default" class="mt-1 mb-1 whatsapp-icon-btn btn-icon" @click=" programShareActions('whatsapp') " data-target="reachus"><feather-icon  icon="MessageCircleIcon" size="50"></feather-icon></b-button>
+          </li>
+          <li> 
+            <b-button variant="default" class="mt-1 mb-1 linkedin-icon-btn btn-icon" @click=" programShareActions('linkedin') " data-target="reachus"><feather-icon  icon="LinkedinIcon" size="50"></feather-icon></b-button>
+          </li>
+          <li> 
+            <b-button variant="default" class="mt-1 mb-1 gmail-icon-btn btn-icon" @click=" programShareActions('gmail') " data-target="reachus"><feather-icon  icon="MailIcon" size="50"></feather-icon></b-button>
+          </li>
+        </ul>
+
+        <b-row class="mt-2">
+          <b-col :md="12" :sm="12" :lg="12"> 
+            <lable class="control-label">Share Link: </lable>
+            <div class="input-icon">
+              <input type="text" class="form-control" :value="program.shareable_link_core" ref="share_link" readonly="true">
+              <b-button class="input-btn-right btn" @click="copyUrl"><feather-icon  icon="CopyIcon" size="20"></feather-icon></b-button>
+            </div>
+          </b-col>          
+        </b-row>
+
+      </div>
+    </b-modal>
+
     
   </div>  
 </template>
@@ -198,6 +238,7 @@ export default {
       loading: false,
       program: null,
       prgrm: {},
+      final_share_url: null,
       ap_costs: null,
       userInfo: null,
       cost: null,
@@ -205,6 +246,7 @@ export default {
       request_callback: {},
       message: null,
       package: null,
+      is_upgraded: true,
       paymentOptions: {
         key: process.env.MIX_RAZOR_KEY,
         currency: "INR",
@@ -222,6 +264,7 @@ export default {
         },
       },
       msgSentImg: require('@/assets/images/consultant/message-sent.png'),
+      errorIconImg: require('@/assets/images/icons/error-icon.png'),
     };
   },
   created() {
@@ -274,9 +317,25 @@ export default {
         id: pkg.package_user_id,
       });
     },
-
     async savePaymentDetail(response) {
       return await axios.post("/razorpay/payment", response);
+    },
+    async submitEnquiry() {
+
+      const { data } = await axios.post(`/enquiries/create_for_program`, {
+        program_id: this.program.id
+      });       
+
+      this.$toast({
+        component: ToastificationContent,
+        props: {
+          title: data.message,
+          icon: "BellIcon",
+          variant: data.success ? "success" : "danger",
+        },
+      });      
+      
+      this.$refs["actions-program-modal"].show();      
     },
     async saveEnrollDetail(program) {
       const { data } = await axios.post(`/package/${program.package_user_id}/enroll`);
@@ -306,9 +365,39 @@ export default {
       });
     },
     async programActions(action) {
-      this.prgrm.title = 'Hello World!';
-      this.prgrm.description = 'Hello World!';
-      this.$refs["actions-program-modal"].show();
+      if(action == 'reachus') {
+        this.submitEnquiry();
+      }
+
+      if(action == 'refer') {
+        const { data } = await axios.get(`/consultant/${this.$store.state.auth.user.id}/is_upgrade`);
+        this.is_upgraded = true; //data.is_upgraded;
+        this.$bvModal.show("program-share-modal");
+      }
+    },
+    async closeProgramActionModal() {
+      this.$refs["actions-program-modal"].hide();          
+    },
+    async copyUrl(){
+      let link = this.program.shareable_link_core; 
+      navigator.clipboard.writeText(link);
+    },
+    async programShareActions(platform) {
+      if(platform == 'fb') {
+        this.final_share_url = 'https://facebook.com/sharer/sharer.php?u=' + this.program.shareable_link;
+      }else if(platform == 'twitter') {
+        this.final_share_url = 'https://twitter.com/intent/tweet/?text=' + this.program.encoded_title + '&amp;url=' + this.program.shareable_link;        
+      }else if(platform == 'linkedin') {
+        this.final_share_url = 'https://www.linkedin.com/shareArticle?mini=true&amp;url=' + this.program.shareable_link + '&amp;title=' + this.program.encoded_title + '&amp;summary=' + this.program.encoded_title + '&amp;source=' + this.program.shareable_link;        
+      }else if(platform == 'whatsapp') {
+        this.final_share_url = 'https://api.whatsapp.com/send?text=' + this.program.encoded_title + '%0A' + this.program.shareable_link;        
+      }else if(platform == 'gmail') {
+        this.final_share_url = 'mailto:?subject=' + this.program.title + '&body=Check out this site%0A' + this.program.shareable_link;        
+      }
+
+      console.log(this.final_share_url);
+      
+      window.open(this.final_share_url, '_blank');
     }
   },
 };
@@ -337,6 +426,11 @@ export default {
   text-align: center;
 }
 
+#program-actions-modal h4.header {
+  line-height: 34px;
+  color: #000000;
+}
+
 #program-actions-modal .modal-body button.notice-btn {
   position: absolute;
   top: -1.5rem;
@@ -350,6 +444,98 @@ export default {
   border-radius: 100px;
   background-color: #007AFE!important;
   border: 0;
+}
+
+#program-actions-modal .modal-body button.close-modal-btn {
+  position: absolute;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border: 0;    
+  display: block;
+  top: -1rem;
+  right: -1rem;
+  text-align: center;
+  border-radius: 5px;
+}
+
+.fb-icon-btn {
+  background: #4267B2!important;
+}
+
+.tw-icon-btn {
+  background: #1DA1F2!important;
+}
+
+.gmail-icon-btn {
+  background: #d44638!important;
+}
+
+.whatsapp-icon-btn {
+  background: #25D366!important;
+}
+
+.linkedin-icon-btn {
+  background: #0a66c2!important;
+}
+
+.instagram-icon-btn {
+  background: #405DE6!important;
+}
+
+.btn-icon {
+  color: #FFFFFF!important;
+}
+
+.input-icon {
+  position: relative;
+}
+
+.input-icon input {
+  min-height: 45px;
+}
+
+.input-icon .input-btn-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-height: 45px;
+  min-width: 50px;
+  border: 1px solid #d8d6de;
+  border-left: 0
+}
+
+ul.list-inline {
+  list-style-type: none;  
+  padding-left: 0;
+  display: flex;
+  gap: 24px;
+}
+
+ul.list-inline li {
+  display: inline-block;
+}
+
+button.width-144 {
+  min-width: 144px;
+}
+
+#program-share-modal h4.header-notice {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #000;  
+}
+
+#program-share-modal .modal-body img {
+  text-align: center;
+  margin-right: auto;
+  margin-left: auto;
+  display: block;
+}
+
+table.pricing-table {
+  max-width: 300px;
+  border-top: 1px solid #eeeeee;
+  border: 1px solid #EEEEEE;
 }
 
 </style>

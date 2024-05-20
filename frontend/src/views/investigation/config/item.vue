@@ -243,7 +243,7 @@ export default {
             },
 			category: null,
 			required,
-			type: 'Create Test Item',
+			type: 'Create Sub Category',
             readonly: false,
             categories: [],
             errors: [],
@@ -259,8 +259,8 @@ export default {
         const isSortDirDesc = false;
         const columns = [
             { key: "index", label: "Sr. No.", sortable: true },
-            { key: "name", label: "Item Name", sortable: true },
             { key: "category", label: "Category Name", sortable: true },
+            { key: "name", label: "Sub Category Name", sortable: true },
             //{ key: "description", label: "Category Description", sortable: true },
             { key: "actions" }
         ];

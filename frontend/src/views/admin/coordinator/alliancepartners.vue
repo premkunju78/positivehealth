@@ -52,7 +52,9 @@
         </validation-observer>
       </div>
     </b-card>
-    <b-card no-body class="mb-0">
+    <b-card no-body class="mb-0" 
+      v-if="!$route.query.for_dh && !$route.query.for_client"
+    >
       <div class="m-2">
         <!-- Table Top -->
         <b-row>
@@ -77,7 +79,7 @@
         :totalRows="totalRows"
         show-empty
         empty-text="No matching records found"
-        :sort-desc.sync="isSortDirDesc"
+        :sort-desc.sync="isSortDirDesc" 
       >
         <!-- Column: User -->
         <template #cell(user)="data">
@@ -242,6 +244,8 @@ export default {
       resetForm,
       required,
       errors: [],
+      dh_id: null,
+      client_id: null,
     };
   },
   props: {
@@ -255,6 +259,14 @@ export default {
     },
   },
   created() {
+    if(this.$route.query.for_dh) {
+      this.dh_id = this.id;           
+    }
+
+    if(this.$route.query.for_client) {
+      this.client_id = this.id;           
+    }
+
     this.getList();
     this.getAlliancePartners();
   },
@@ -289,7 +301,17 @@ export default {
     },
     async getAlliancePartners() {
       try {
-        const { data } = await axios.get("/alliance-partner/list");
+
+        if(this.client_id !== null)
+          this.pagination.client_id = this.client_id;                
+
+        if(this.dh_id !== null)
+          this.pagination.dh_id = this.dh_id;                
+
+        const { data } = await axios.get("/alliance-partner/list", {
+          params: this.pagination
+        });
+
         this.alliancePartners = data.partners;
         console.log(data);
       } catch (err) {
@@ -305,11 +327,18 @@ export default {
     async onSubmit() {
       try {
         this.userData.coordinator = this.id;
+
+        if(this.dh_id !== null)
+          this.userData.dh_id = this.dh_id;
+
+        if(this.client_id !== null)  
+          this.userData.client_id = this.client_id;
+        
         const { data } = await axios
-          .post(`/coordinators/alliancepartners/${this.id}`, this.userData)
-          .then((response) => {
-            this.availabilityMessage = response.data.message;
-          });
+          .post(`/coordinators/alliancepartners/${this.id}`, this.userData);
+
+        this.availabilityMessage = data.message;
+
         this.$toast({
           component: ToastificationContent,
           props: {
@@ -318,7 +347,16 @@ export default {
             variant: data.success ? "success" : "danger",
           },
         });
+
+        if(this.dh_id) {
+          window.location.href = "/dh/list";
+        }
+
+        this.resetData();
         this.getList();
+
+        this.$nextTick(() => this.$refs.refFormObserver.reset());
+
       } catch (err) {
         console.log(err);
       }

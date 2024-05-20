@@ -71,6 +71,14 @@
           </div>
         </template>
 
+        <template #cell(call)="data">
+
+          <b-button variant="success" @click="callNow(data.item)" class="btn-sm">
+            <span class="text-nowrap">Call Now</span>
+          </b-button>
+
+        </template>
+
         <!-- Column: Actions -->
         <template #cell(actions)="data">
           <div class="text-nowrap">
@@ -217,7 +225,7 @@ export default {
       tableColumns: [
         { key: "id", label: "Id", sortable: true },
         { key: "name", label: "Full Name", sortable: true },
-        { key: "gender", label: "Gender", sortable: true },
+        { key: "call", label: "Call", sortable: true },
         { key: "email", label: "Email", sortable: true },
         { key: "phone", label: "Contact Number", sortable: true },
         { key: "actions" },
@@ -289,7 +297,28 @@ export default {
       this.pagination.page = val;
       this.getList();
     },
-   
+    async callNow(item) {
+      try {
+        const { data } = await axios.post(`/workflow/call/now`, item);
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: data.message,
+            icon: "AlertTriangleIcon",
+            variant: data.success ? "success" : "danger",
+          },
+        });
+      } catch {
+        this.$toast({
+          component: ToastificationContent,
+          props: {
+            title: "Error while initiating a call",
+            icon: "AlertTriangleIcon",
+            variant: "danger",
+          },
+        });
+      }
+    },
 
     async getRoles() {
       try {

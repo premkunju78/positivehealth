@@ -99,6 +99,30 @@
                     </b-form-invalid-feedback>
                 </b-form-group>
             </validation-provider>
+
+              <validation-provider
+                  #default="validationContext"
+                  name="types"
+              >
+                  <b-form-group
+                      label="Communication Type"
+                      label-for="type"
+                      :state="getValidationState(validationContext)"
+                  >
+                      <v-select
+                          v-model="booking.type"
+                          :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                          :options="event.type"
+                          :reduce="val => val.value"
+                          placeholder="Select Types"
+                          :clearable="true"
+                      />
+                      <b-form-invalid-feedback :state="getValidationState(validationContext)">
+                          {{ validationContext.errors[0] }}
+                      </b-form-invalid-feedback>
+                  </b-form-group>
+              </validation-provider>
+
               <validation-provider
                 #default="validationContext"
                 name="Name"
@@ -360,7 +384,10 @@ export default {
   watch: {
     timeSlots:  function( val ){
       this.slots = val;
-    }
+    },
+    typeOptions:  function( val ){
+      this.availabilityTypes = val;
+    }    
   },
   data() {
     return {
@@ -404,8 +431,7 @@ export default {
         coupon_amount: null,
         coupon_applied: false,
         coupon_message: '',
-        coupon_color: 'red',
-
+        coupon_color: 'red'
     }
   },
   setup(props, { emit }) {

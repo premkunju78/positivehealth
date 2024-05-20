@@ -119,17 +119,27 @@ export default [{
 
     },
     {
-        title: 'Today Schedules',
-        route: 'todayWorkflowSchedules',
+        title: 'Today\'s Appointments',
+        route: 'todays-schedules',
+        permission: ['view-appointments'],
+
     },
     {
-        title: 'Session schedules',
-        route: 'workflowschedules',
+        title: 'Upcoming Appointments',
+        route: 'upcoming-schedules',
+        permission: ['view-appointments'],
+
+    },
+    {
+        title: 'Past Appointments',
+        route: 'past-schedules',
+        permission: ['view-appointments'],
+
     },
     {
         title: 'Calendar',
         route: 'workflowcalendars',
-    },
+    }
     ],
 
 },

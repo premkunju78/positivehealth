@@ -201,4 +201,31 @@ export default {
   bottom: 150px;
   margin-left: 8px;
 }
+
+ul.navigation.navigation-main li.nav-item[custom-class="upgrade-menu"] a {
+  padding-left: 0!important;
+  padding-right: 0!important;
+  
+}
+
+ul.navigation.navigation-main li.nav-item[custom-class="upgrade-menu"] > a svg {
+  margin-right: 0!important;
+  color: #000000;
+}
+
+ul.navigation.navigation-main li.nav-item[custom-class="upgrade-menu"] {
+  background: linear-gradient(109.6deg, rgb(255, 219, 47) 11.2%, rgb(244, 253, 0) 100.2%);
+}
+
+ul.navigation.navigation-main li.nav-item[custom-class="upgrade-menu"].active a {
+  background: transparent!important;
+}
+
+ul.navigation.navigation-main li.nav-item[custom-class="upgrade-menu"] .menu-title {
+  padding-left: 5px;
+  padding-right: 5px;  
+  padding-top: 2px;
+  color: #000000;
+}
+
 </style>

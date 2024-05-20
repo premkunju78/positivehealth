@@ -10,6 +10,10 @@ class TestCategoryController extends Controller
     public function index( Request $request)
     {
         $category =  TestCategory::where('active',1);
+        if ($request->type) {
+            $category->where('type', $request->type);
+        }
+
         $c1 = clone $category;
         return response()->json([
             'categories' => $c1->limit($request->per_page)->offset(($request->page-1)*$request->per_page )->get(),
@@ -43,7 +47,8 @@ class TestCategoryController extends Controller
         $request->validate( $this->rules() );
 
         $category = new TestCategory([
-            'name' => $request->name
+            'name' => $request->name,
+            'type' => $request->type
         ]);
 
         $category->save();
@@ -63,6 +68,7 @@ class TestCategoryController extends Controller
         if( $category)
         {
             $category->name = $request->name;
+            $category->type = $request->type;
             $category->update();
 
             return response()->json([

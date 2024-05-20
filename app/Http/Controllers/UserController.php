@@ -25,7 +25,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Vimeo\Laravel\Facades\Vimeo;
 use App\Models\AlianConsultant;
+use App\Models\AlianLeagueConsultant;
+use App\Models\FavoritesConsultants;
 use App\Models\Role;
+use Illuminate\Notifications\Messages\MailMessage;
+use Mail;
 
 class UserController extends Controller
 {
@@ -40,6 +44,7 @@ class UserController extends Controller
             $filters = json_decode($filters, true);
         }
         $roles = Role::where('is_consultant', '1')->pluck('id');
+        $is_current_user_consultant = Role::where('id', auth()->user()->role_id)->value('is_consultant');
         $users = User::join('roles', 'roles.id', '=', 'users.role_id')
             ->join('user_details', 'user_details.user_id', '=', 'users.id')
             ->select(
@@ -50,9 +55,10 @@ class UserController extends Controller
                 'user_details.authorization',
                 'user_details.is_upgraded',
                 'user_details.hide_consultants',
+                DB::raw("CONCAT(user_details.address,', ', user_details.city) as location"),
                 'roles.name as role'
             )->whereIn('users.role_id', $roles)
-            ->when($filters && !empty($filters), function ($q) use ($filters, $client) {
+            ->when($filters && !empty($filters), function ($q) use ($filters, $client, $is_current_user_consultant) {
                 if (isset($filters['specialization'])) {
                     $q->where('user_details.specialization', $filters['specialization']);
                 }
@@ -76,8 +82,38 @@ class UserController extends Controller
                 }
                 $q->where('users.id', '!=', auth()->user()->id);
             })
-            ->when(auth()->user()->role_id === 10 || auth()->user()->role_id === 11 || auth()->user()->role_id === 2 || $list, function ($q) {
+            ->when(auth()->user()->role_id === 10 || auth()->user()->role_id === 11 || auth()->user()->role_id === 2 || $is_current_user_consultant || $list, function ($q) use($is_current_user_consultant, $filters) {
+
                 $q->where('user_details.is_upgraded', 1);
+                
+                if (auth()->user()->role_id === 2) {
+
+                    $consultant_ids = AlianLeagueConsultant::where('aliance_id', auth()->user()->id)->value('consultant_ids');                    
+                    $consultant_ids = unserialize($consultant_ids);
+
+                    if (empty($consultant_ids)) {
+                        $consultant_ids = ['no'];
+                    }
+
+                    $q->whereIn('users.id', $consultant_ids);
+
+                }
+
+                if ($is_current_user_consultant && $filters == false) {
+
+                    $alliance_pid = AlianConsultant::where('consultant_id', auth()->user()->id)
+                    ->value('aliance_id');
+
+                    $consultant_ids = AlianLeagueConsultant::where('aliance_id', $alliance_pid)->value('consultant_ids');                    
+                    $consultant_ids = unserialize($consultant_ids);
+
+                    if (empty($consultant_ids)) {
+                        $consultant_ids = ['no'];
+                    }
+
+                    $q->whereIn('users.id', $consultant_ids);
+                }
+
                 // ->leftJoin('alian_consultants', 'alian_consultants.consultant_id', '=', 'users.id')
                 // ->selectRaw("IF(alian_consultants.consultant_id, 'true' , 'false') as checked")
                 // ->addSelect('alian_consultants.id as alian_consultant_id','alian_consultants.aliance_id as alian_partner_id');
@@ -97,9 +133,15 @@ class UserController extends Controller
                 // ->distinct('alian_consultants.consultant_id');
             })->when($hide_consultants, function ($q) use ($hide_consultants) {
                 $q->whereNotIn('users.id', json_decode($hide_consultants,TRUE));
-            })->when($consultant_id, function ($q) use ($consultant_id) {
-                $q->where('users.id', '!=',  $consultant_id);
-            }) ->orderBy('users.name', 'asc');
+            })->when($consultant_id, function ($q) use ($consultant_id, $is_current_user_consultant) {
+                if (!$is_current_user_consultant) {
+                    $q->where('users.id', '!=',  $consultant_id);
+                }
+            })
+            ->leftJoin('alian_consultants as ap', 'ap.consultant_id', '=', 'users.id')
+            ->leftJoin('user_details as ap_detail', 'ap_detail.user_id', '=', 'ap.aliance_id')
+            ->addSelect(DB::raw("CONCAT(ap_detail.company_name) as linked_ap")) 
+            ->orderBy('users.name', 'asc');
 
         $u1 = clone $users;
         return response()->json([
@@ -135,6 +177,11 @@ class UserController extends Controller
                     );
             })->find($id);
         $user->dob = date('d-m-Y', strtotime($user->detail->dob));
+
+        $digits = 4;
+        $referral_code = 'REF' . trim(pow(10, $digits - 1), pow(10, $digits) - 1) . base64_encode($user->id);
+
+        $user->referralcode = $referral_code;
 
         if ($slot) {
             $availability =  DB::table('availabilities')->where('user_id', $id)->select('start', 'end', 'frequency')->get();
@@ -389,6 +436,7 @@ class UserController extends Controller
             $data =  Helpers::storeFiles($request, $data);
 
             $data['dob'] = (!empty($request->dob)) ? date('Y-m-d', strtotime($request->dob)) : NULL;
+            $data['notes'] = $request->notes ?? "";
 
             UserDetail::create($data);
 
@@ -410,6 +458,30 @@ class UserController extends Controller
             dd($e);
             return response()->json(['success' => false, 'message' => "Something went wrong please try after some time"]);
         }
+    }
+
+    public function update_availability_status(Request $request, int $id) {
+        $request->validate([
+            'city' => 'required',
+            'status' => 'required',
+        ]);
+
+        $city = $request->input('city');
+        $status = $request->input('status');
+
+        $available_cities = UserDetail::where('user_id', $id)->value('available_cities');
+        
+        foreach ($available_cities as $key => $location) {            
+            if ($location['city'] == $city) {
+                $location['status'] = $location['status'] === 'active' ? 'inactive' : 'active';
+            }
+
+            $available_cities[$key]['status'] = $location['status'];
+        }
+
+        UserDetail::where('user_id', $id)->update(['available_cities' => $available_cities]);
+
+        return response()->json(['success' => true, 'message' => "Availability updated successfully"]);
     }
 
     public function update(Request $request, int $id)
@@ -443,6 +515,7 @@ class UserController extends Controller
                 $data['certificates'] = $userDetail->certificates;
                 $data['signature_img'] = $userDetail->signature_img;
                 $data['logo'] = $userDetail->logo;
+                $data['notes'] = $request->notes ?? "";
                 $data = Helpers::storeFiles($request, $data);
 
                 // $data['dob'] = $data['dob'] === 'null'  ? null : $data['dob'];
@@ -611,10 +684,10 @@ class UserController extends Controller
         }
     }
 
-    public function upgrade(int $id)
+    public function upgrade(Request $request, int $id)
     {
         $user = UserDetail::where('user_id', $id)->first();
-
+        
         if ($user) {
             $user->is_upgraded = !$user->is_upgraded;
             $user->save();
@@ -728,6 +801,13 @@ class UserController extends Controller
         return response()->json(['success' => true, 'message' => 'Data updated successfully']);
     }
 
+    public function check_upgrade ($user_id){
+        $is_upgraded = UserDetail::where('user_id', $user_id)->value('is_upgraded');
+        $is_current_user_consultant = Role::where('id', auth()->user()->role_id)->value('is_consultant');
+        
+        return response()->json(['success' => true, 'message' => 'User update statue', 'is_upgraded' => $is_upgraded]);   
+    }
+
     public function get_users_and_roles(Request $request)
     {
         $roles =  Role::select('id', 'label')
@@ -746,5 +826,51 @@ class UserController extends Controller
             'role_list' => $roles,
             'user_list' => @$users   
         ]]);
+    }
+
+    public function consultants_assign_to_ap(Request $request, $aliance_id) {
+        $consultant_ids = $request->input('consultant_ids');
+        $consultant_ids = serialize($consultant_ids);
+
+        $is_exists = AlianLeagueConsultant::where('aliance_id', $aliance_id)->first();
+
+        if ($is_exists) {
+            $is_exists->consultant_ids = $consultant_ids;
+            $is_exists->save();
+        }else{
+            AlianLeagueConsultant::insert([
+                'aliance_id' => $aliance_id,
+                'consultant_ids' => $consultant_ids
+            ]);                
+        }
+
+        return response()
+        ->json(['success' => true, 'message' => 'League Consultant Added Successfully!']);
+    }
+
+    public function getFavoritesConsultants(Request $request) {
+        $consultant_ids = FavoritesConsultants::where('favoroute_of', auth()->user()->id)->value('consultant_ids');
+
+        return response()->json(['success' => true, 'user' => [
+            'consultant_ids' => $consultant_ids,
+        ]]);                    
+    }
+
+    public function makeFavoritesConsultants(Request $request) {
+        $consultant_ids = $request->input('consultant_ids');        
+        $favoroute_of = $request->input('user_id');
+        
+        if (FavoritesConsultants::where('favoroute_of', $favoroute_of)->exists()) {
+            FavoritesConsultants::where('favoroute_of', $favoroute_of)->update(['consultant_ids' => $consultant_ids]);
+        }else{
+            FavoritesConsultants::create([
+                'favoroute_of' => $favoroute_of,
+                'consultant_ids' => $consultant_ids
+            ]);
+        }
+
+        return response()
+        ->json(['success' => true, 'message' => 'Consultants saved successfully!']);
+
     }
 }

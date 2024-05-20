@@ -11,8 +11,17 @@
     <b-row v-if="prescriptionData" class="invoice-preview">
 
       <!-- Col: Left (Invoice Container) -->
-      <b-col cols="10" xl="9" md="8">
-        <b-card no-body class="invoice-preview-card">
+      <b-col cols="12" xl="12" md="12">
+        <b-button
+          variant="primary"
+          @click="printInovie"
+        >
+          <feather-icon
+            icon="DownloadIcon"
+          />        
+          <span class="text-nowrap">Download Invoice</span>
+        </b-button>        
+        <b-card no-body class="invoice-preview-card mt-2" id="client-prescription-invoice">
           <!-- Header -->
           <b-card-body class="invoice-padding pb-0">
 
@@ -29,6 +38,13 @@
                       Prajana
                     </h3>
                   </div>
+
+                  <address>
+                    <p><b>{{ prescriptionData.consultant_clinic }}</b></p>
+                    <p>{{ prescriptionData.consultant_pincode }}</p>
+                    <p>{{ prescriptionData.consultant_address }}</p>
+                  </address>
+
                 </div>
                 <p class="card-text mb-25">
                 </p>
@@ -40,7 +56,9 @@
 
               <!-- Header: Right Content -->
               <div class="mt-md-0 mt-2 ">
-                Consultant <b>{{ prescriptionData.consultant }}</b>
+                <p><b>{{ prescriptionData.consultant }}</b><br/>({{ prescriptionData.consultant_specialized_in }})</p>
+                <p><feather-icon icon="MailIcon" />  <span>{{ prescriptionData.consultant_email }}</span></p>
+
                 <div class="invoice-date-wrapper">
                   <!-- <p class="invoice-date-title">
                       Phone Number:  {{ prescriptionData.phone }}
@@ -60,14 +78,12 @@
 
               <!-- Col: Invoice To -->
               <b-col cols="11" xl="6" class="p-0">
-                <h6 class="ml-1 mb-2">
-                  Client:
-                </h6>
                 <h6 class="ml-1 mb-25">
                   {{ prescriptionData.patient_name }}
                 </h6>
                 <p class="ml-1 card-text mb-25" v-if="prescriptionData.dob">
-                  Age.{{ age(prescriptionData.dob) }}
+                  Age.{{ age(prescriptionData.dob) }} years /
+                  <b>{{ prescriptionData.patient_gender }}</b>
                 </p>
                 <!-- <p class="ml-1 card-text mb-25">
                   Mobile No.{{ prescriptionData.patient_phone }}
@@ -92,7 +108,7 @@
 
           <!-- Invoice Description: Table -->
           <b-table-lite responsive bordered :items="prescriptionData.data" :fields="fields"
-            style="min-height:500px;padding-top:3%">
+            style="padding-top:3%">
             <template #cell(index)="data">
               <span style="color:#fff;">{{ data.index + 1 }}</span>
             </template>
@@ -107,7 +123,6 @@
           </b-table-lite>
 
           <!-- Spacer -->
-          <hr class="invoice-spacing">
 
           <!-- Note -->
           <b-card-body class="invoice-padding pt-0 mt-2">
@@ -169,8 +184,7 @@ export default {
     ];
 
 
-
-    axios.get(`prescription/${router.currentRoute.params.id}`)
+    axios.get(`prescription/${router.currentRoute.params.id}?client_id=${router.currentRoute.params.client_id}`)
       .then(response => {
         prescriptionData.value = response.data.prescription
       })
@@ -202,11 +216,35 @@ export default {
         diff /= (60 * 60 * 24);
         return Math.abs(Math.round(diff / 365.25));
       }
+    },
+    printInovie() {
+      const prtHtml = document.getElementById('client-prescription-invoice').innerHTML;
+      let stylesHtml = '';
+      for (const node of [...document.querySelectorAll('link[rel="stylesheet"], style')]) {
+        stylesHtml += node.outerHTML;
+      }
+
+      const WinPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+
+      WinPrint.document.write(`<!DOCTYPE html>
+      <html>
+        <head>
+          ${stylesHtml}
+        </head>
+        <body>
+          ${prtHtml}
+        </body>
+      </html>`);
+
+      WinPrint.document.close();
+      WinPrint.focus();
+      WinPrint.print();
+      WinPrint.close();
+
     }
   }
 }
 </script>
-
 
 
 <style lang="scss">
@@ -214,6 +252,11 @@ export default {
   width: 10px !important;
   text-align: center;
   background-color: #7566ed;
+}
+
+address p {
+  margin: 0;
+  padding: 0
 }
 
 [dir] .table th,

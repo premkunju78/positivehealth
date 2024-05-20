@@ -29,6 +29,8 @@ class AlliancePartnerController extends Controller
         }
         $users =  User::join('roles', 'roles.id', '=', 'users.role_id')
             ->join('user_details', 'user_details.user_id', '=', 'users.id')
+            ->leftJoin('diagnostichead_alliance as dha', 'dha.ap_id', '=', 'users.id')
+            ->leftJoin('users as dh', 'dh.id', '=', 'dha.dh_id')
             ->where('users.role_id', 2)
             ->select(
                 'users.*',
@@ -45,6 +47,7 @@ class AlliancePartnerController extends Controller
                 'user_details.pincode',
                 'user_details.group',
                 'user_details.type',
+                'dh.name as diagnostichead'
             )->when($filters && !empty($filters), function ($q) use ($filters) {
                 if (isset($filters['group'])) {
                     $q->where('user_details.group', $filters['group']);
@@ -246,19 +249,27 @@ class AlliancePartnerController extends Controller
             }
         }
     }
-    public function list()
+    public function list(Request $request)
     {
         $role = \App\Models\Role::find(auth()->user()->role_id);
+        $for_dh = $request->input('dh_id');
+
         $alliancepartners = User::where('status', 1)
             ->where('users.role_id', 2)
             ->join('user_details', 'users.id', '=', 'user_details.user_id')
+            ->leftJoin('diagnostichead_alliance', 'diagnostichead_alliance.ap_id', '=', 'users.id')
             ->when($role, function ($q) use ($role) {
                 $alliancepartners = DB::table('coordinator_alliancepartners')->where('coordinator_id', auth()->user()->id)->pluck('alliancepartner_id')->toArray();
                 if ($role->name === 'coordinator') {
                     $q->whereIn('users.id', $alliancepartners);
                 }
             })
-            ->select('users.id', 'user_details.company_name as label')->get();
+            ->when($for_dh, function($q) {
+                $q->whereNull('diagnostichead_alliance.id');
+            })
+            ->select('users.id', 'user_details.company_name as label')
+            ->groupBy('users.id')
+            ->get();
         return response()->json(['success' => true, 'partners' => $alliancepartners]);
     }
 

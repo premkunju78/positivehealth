@@ -8,10 +8,10 @@ import store from '@/store';
 const axiosIns = axios.create({
     // You can add your headers here
     // ================================
-    baseURL: 'http://127.0.0.1:8000/api',
-    //baseURL: 'http://healthinfinit.moziztech.com/api',
-    //baseURL: 'https://staging.positivehealth.app/api',
-    //baseURL: 'https://positivehealth.app/api',
+    // baseURL: 'http://127.0.0.1:8000/api',
+    // baseURL: 'http://healthinfinit.moziztech.com/api',
+    baseURL: 'https://staging.positivehealth.app/api',
+    // baseURL: 'https://positivehealth.app/api',
     timeout: 10000, // Request timeout
     // headers: {'X-Custom-Header': 'foobar'}
 })

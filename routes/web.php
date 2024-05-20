@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\TestController;
 use Vimeo\Laravel\Facades\Vimeo;
+use App\Http\Controllers\PackageController;
+use App\Http\Controllers\PackageGroupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +23,8 @@ use Vimeo\Laravel\Facades\Vimeo;
 //    dd( $response['body'] );
 // });
 Route::get('/tk', [TestController::class, 'test']);
+
+Route::get('/pg/{package_id}/{user_id}',  [PackageController::class, 'loadProgramForFrontend']);
 
 Route::get('/view/file', function () {
     $path = request('path') ?? null;

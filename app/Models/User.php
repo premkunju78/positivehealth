@@ -79,4 +79,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(UserDetail::class);
     }
+
+    public function favoritesConsultants()
+    {
+        return $this->hasOne(FavoritesConsultants::class, 'favoroute_of', 'id');
+    }
 }

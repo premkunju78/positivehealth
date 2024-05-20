@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AlianClient;
 use App\Models\AlliancePartner;
 use App\Models\ClientConsultant;
+use App\Models\ClientReferral;
 use App\Models\CoordinatorAlliancepartner;
 use App\Models\GroupUser;
 use App\Models\HealthcoachClient;
@@ -17,6 +18,7 @@ use App\Models\RoleUser;
 use App\Models\UserDetail;
 use App\Models\UserVideo;
 use App\Models\DiagnosticheadClient;
+use App\Models\DiagnosticheadAlliance;
 use Illuminate\Support\Facades\URL;
 use App\Notifications\NewAccountCreated;
 use Illuminate\Http\Request;
@@ -33,6 +35,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $id = $request->id ?? auth()->user()->id;
+        $for_ap = $request->for_ap ?? false;
         $userDetail = UserDetail::where('user_id', $id)->first();
         if ($request->role) {
             $role = $request->role;
@@ -94,11 +97,13 @@ class ClientController extends Controller
             })->when(auth()->user()->role_id == 17, function ($q) {
                 $ids = DiagnosticheadClient::where('dh_id', auth()->user()->id)->pluck('client_id');
                 $q->whereIn('users.id', $ids);
+            })->when($for_ap, function ($q) use($for_ap) {
+                $q->whereIn('alian_client.aliance_id', [$for_ap]);
             });
 
         $u1 = clone $users;
         return response()->json([
-            'clients' => $u1->limit($request->per_page)->offset(($request->page - 1) * $request->per_page)->get(),
+            'clients' => $u1->limit($request->per_page)->offset(($request->page - 1) * $request->per_page)->orderBy('users.id', 'DESC')->get(),
             'page' => $request->page,
             'total' => $users->count(),
             'per_page' => $request->per_page
@@ -440,7 +445,7 @@ class ClientController extends Controller
 
     public function programlist($id)
     {
-        $packages = PackageUser::where('package_users.user_id', $id)->where('enrolled', '1')->join('packages', 'packages.id', '=', 'package_users.package_id')->select('packages.*', 'package_users.*')->get();
+        $packages = PackageUser::where('package_users.user_id', $id)->join('packages', 'packages.id', '=', 'package_users.package_id')->select('packages.*', 'package_users.*')->get();
         $userprograms = array();
         $paidprograms = array();
         foreach ($packages as $package) {
@@ -468,7 +473,7 @@ class ClientController extends Controller
                     'end_date' => (!empty($package->start_date)) ?  date('d-m-Y', strtotime($package->end_date)) : '-',
                 );
 
-                if (!empty($package->transaction_date)) {
+                // if (!empty($package->transaction_date)) {
                     $paidprograms[] = array(
                         'id' => $package->id,
                         'program_name' => $package->title,
@@ -481,7 +486,7 @@ class ClientController extends Controller
                         'start_date' => (!empty($package->start_date)) ?  date('d-m-Y', strtotime($package->start_date)) : '-',
                         'end_date' => (!empty($package->start_date)) ?  date('d-m-Y', strtotime($package->end_date)) : '-',
                     );
-                }
+                // }
             }
         }
         return response()->json([
@@ -549,15 +554,27 @@ class ClientController extends Controller
         return response()->json(['success' => false, 'message' => 'user not found in storage']);
     }
 
-    public function dhlist($id)
+    public function dhlist(Request $request, $id)
     {
-        $client = User::find($id);
-        $userIds = DiagnosticheadClient::where('client_id', $id)->pluck('dh_id');
-        $diagnosticpartners = User::whereIn('users.id', $userIds)
-            ->where('role_id', 17)
-            ->join('diagnostichead_clients', 'users.id', '=', 'diagnostichead_clients.dh_id')
-            ->join('user_details', 'users.id', '=', 'user_details.user_id')
-            ->select('users.name', 'users.email', 'users.phone', 'users.id as user_id', 'diagnostichead_clients.id', 'user_details.company_name as company_name')->get();
+        if ($request->has('alliance_id')) {
+            $alliance = User::find($id);
+            $userIds = DiagnosticheadAlliance::where('ap_id', $id)->pluck('dh_id');
+            $diagnosticpartners = User::whereIn('users.id', $userIds)
+                ->where('role_id', 17)
+                ->join('diagnostichead_clients', 'users.id', '=', 'diagnostichead_clients.dh_id')
+                ->join('user_details', 'users.id', '=', 'user_details.user_id')
+                ->select('users.name', 'users.email', 'users.phone', 'users.id as user_id', 'diagnostichead_clients.id', 'user_details.company_name as company_name')->get();
+
+        } else{   
+            $client = User::find($id);
+            $userIds = DiagnosticheadClient::where('client_id', $id)->pluck('dh_id');
+            $diagnosticpartners = User::whereIn('users.id', $userIds)
+                ->where('role_id', 17)
+                ->join('diagnostichead_clients', 'users.id', '=', 'diagnostichead_clients.dh_id')
+                ->join('user_details', 'users.id', '=', 'user_details.user_id')
+                ->select('users.name', 'users.email', 'users.phone', 'users.id as user_id', 'diagnostichead_clients.id', 'user_details.company_name as company_name')->get();
+        }
+
         return response()->json(['success' => true, 'diagnosticpartners' => $diagnosticpartners, 'name' => $client->name]);
     }
 
@@ -572,4 +589,18 @@ class ClientController extends Controller
         $user = User::find($id);
         return response()->json(['success' => true, 'user' => $user]);
     }
+
+    public function cancel_referral(Request $request)
+    {
+        $client_id = (int) auth()->user()->id;
+        $referred_to = (int) $request->referred_to;
+
+        ClientReferral::where([
+            'client_id' => $client_id,
+            'referred_to' => $referred_to
+        ])->update(['status' => 'decline']);
+
+        return response()->json(['success' => true, 'message' => 'Appointment cancelled successfully!']);
+    }
+
 }

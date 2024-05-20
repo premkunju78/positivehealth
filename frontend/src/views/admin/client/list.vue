@@ -21,8 +21,9 @@
                   <span class="text-nowrap">Add Client</span>
                 </b-button>
               </router-link>
-              <b-button variant="primary" @click="viewClientGroupModal()" class="ml-1" v-if="$store.getters.user.role_id == 10 || $store.getters.user.role_id == 1
-                ">
+              <b-button variant="primary" @click="viewClientGroupModal()" class="ml-1" v-if="
+                $store.getters.user.role_id == 10 || $store.getters.user.role_id == 1
+              ">
                 <span class="text-nowrap">Add to Client Group</span>
               </b-button>
             </div>
@@ -30,18 +31,22 @@
         </b-row>
       </div>
       <!-- Per Page -->
-      <b-col cols="12" md="6" class="d-flex align-items-center justify-content-start mb-1 mb-md-0"
-        v-if="$store.getters.user.role_id == 1 || $store.getters.user.role_id == 2 || $store.getters.user.role.is_consultant == 1">
+      <b-col cols="12" md="6" class="d-flex align-items-center justify-content-start mb-1 mb-md-0">
         <ul class="nav nav-tabs nav-justified" id="myTab2" role="tablist">
           <li class="nav-item">
             <a :class="tabId === 'program' ? 'nav-link active' : 'nav-link'" @click="showProgramClient()"
-              id="home-tab-justified" data-bs-toggle="tab" role="tab" aria-controls="home-just"
+              id="program-tab-justified" data-bs-toggle="tab" role="tab" aria-controls="home-just"
               aria-selected="true">Program</a>
           </li>
           <li class="nav-item">
-            <a :class="tabId === 'consultation' ? 'nav-link active' : 'nav-link'" id="profile-tab-justified"
+            <a :class="tabId === 'consultation' ? 'nav-link active' : 'nav-link'" id="consultation-tab-justified"
               @click="showConsultationClient()" data-bs-toggle="tab" role="tab" aria-controls="profile-just"
               aria-selected="false">Consultation</a>
+          </li>
+          <li class="nav-item">
+            <a :class="tabId === 'group_consultation' ? 'nav-link active' : 'nav-link'" id="group_consultation-tab-justified"
+              @click="showGroupConsultation()" data-bs-toggle="tab" role="tab" aria-controls="profile-just"
+              aria-selected="false">Group Consultation</a>
           </li>
         </ul>
       </b-col>
@@ -85,21 +90,15 @@
             <template #cell(age)="data">
               {{ age(data.item.dob) }}
             </template>
-            <template #cell(investigation)="data">
-              <b-button variant="success" class="btn btn-primary ml-2" @click="
-                $router.push({ name: 'investigations', params: { id: data.item.id } })
-                ">
-                <span class="text-nowrap">Investigation</span>
-              </b-button>
-            </template>
 
 
 
             <!-- Column: Actions -->
             <template #cell(actions)="data">
-              <div class="text-nowrap" v-if="typeof $store.getters.user.detail !== 'undefined' &&
-                $store.getters.user.detail.cisf == '1'
-                ">
+              <div class="text-nowrap" v-if="
+                typeof $store.getters.user.detail !== 'undefined' &&
+                $store.getters.user.detail && $store.getters.user.detail.cisf == '1'
+              ">
                 <b-dropdown variant="link" no-caret :right="$store.state.appConfig.isRTL" v-permission="['view-clients']">
                   <template #button-content>
                     <feather-icon icon="MoreVerticalIcon" size="16" class="align-middle text-body"
@@ -124,7 +123,7 @@
                 <!-- Client Modules -->
                 <feather-icon :id="`client-module-${data.item.id}-id`" icon="LayersIcon" size="16" class="mx-1" @click="
                   $router.push({ name: 'client-modules', params: { id: data.item.id } })
-                  " />
+                " />
                 <b-tooltip title="Client Modules" :target="`client-module-${data.item.id}-id`" />
 
                 <b-dropdown v-if="$store.getters.user.role_id != 2" variant="link" no-caret
@@ -138,9 +137,10 @@
                   <span class="align-middle ml-50">Details</span>
                 </b-dropdown-item> -->
 
-                  <b-dropdown-item @click="updatestatus(data.item)" v-permission="['view-clients']" v-if="data.item.client_status == 'Pending' &&
+                  <b-dropdown-item @click="updatestatus(data.item)" v-permission="['view-clients']" v-if="
+                    data.item.client_status == 'Pending' &&
                     $store.getters.user.role.id == 11
-                    ">
+                  ">
                     <feather-icon icon="EditIcon" />
                     <span class="align-middle ml-50">Complete</span>
                   </b-dropdown-item>
@@ -168,16 +168,17 @@
                     <feather-icon icon="UsersIcon" />
                     <span class="align-middle ml-50">Assign Health Coach</span>
                   </b-dropdown-item>
-                  <b-dropdown-item v-if="$store.getters.user.role_id == 10 || $store.getters.user.role_id == 11"
-                    @click="viewAssigndhModal(data.item)">
-                    <feather-icon icon="UsersIcon" />
-                    <span class="align-middle ml-50">Assign Diagbostic Partner</span>
-                  </b-dropdown-item>
                   <!-- <b-dropdown-item @click="viewAssignInchargeModal(data.item)" v-permission="['view-clients']"
                   v-if="!data.item.ic_id">
                   <feather-icon icon="UsersIcon" />
                   <span class="align-middle ml-50">Assign Incharge</span>
                 </b-dropdown-item> -->
+                  <b-dropdown-item
+                    :to="{ name: 'coodinator-alliance-view', params: { id: data.item.id },query: {name: data.item.name, for_client: true } }"
+                  >
+                    <feather-icon icon="UsersIcon" />
+                    <span class="align-middle ml-50">Assign AP</span>
+                  </b-dropdown-item>                
                   <b-dropdown-item @click="viewUserModal(data.item)" v-permission="['view-clients']">
                     <feather-icon icon="EyeIcon" />
                     <span class="align-middle ml-50">View Consultants</span>
@@ -197,64 +198,55 @@
         </div>
         <div :class="tabId === 'consultation' ? 'tab-pane active' : 'tab-pane'" id="consultation" role="tabpanel"
           aria-labelledby="home-tab-justified" :key="key">
-
-          <b-table ref="refScheduleListTable" class="position-relative" :items="meetingitems" responsive
-            :fields="meetingtableColumns" primary-key="id" :sort-by.sync="meetingsortBy" :totalRows="meetingtotalRows"
-            show-empty empty-text="No matching records found" :sort-desc.sync="meetingisSortDirDesc">
-            <template #cell(name)="data">
-              <span>{{ data.item.booked_by === user_id ? data.item.creator : data.item.name }}</span>
+          <b-table ref="refUserListTable" class="position-relative" :items="consultation_items" responsive :fields="consultationTableColumns"
+            primary-key="id" :sort-by.sync="sortBy" :totalRows="consultationTotalRows" show-empty
+            empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
+            <template #cell(user)="data">
+              <b-media vertical-align="center">
+                <template #aside>
+                  <b-avatar size="32" :src="data.item.avatar" :text="avatarText(data.item.name)"
+                    :variant="`light-primary`" :to="{ name: 'apps-users-view', params: { id: data.item.id } }" />
+                </template>
+                {{ data.item.name }}
+              </b-media>
             </template>
-            <!-- Column: Video -->
-            <template #cell(video)="data">
-
-              <b-button variant="info" v-permission="['create-video-meeting']"
-                v-if="!data.item.host_link && (new Date(data.item.timeslot_to).getTime() >= new Date().getTime())"
-                @click="generateVideoLink(data.item)">
-                <span class="text-nowrap">Create Meeting</span>
-              </b-button>
-
-              <a target="_blank" v-if="data.item.host_link"
-                :href="data.item.booked_by === user_id ? data.item.participant_link : data.item.host_link">
-                <b-button variant="info">
-                  <span class="text-nowrap primary">Join Now</span>
-                </b-button>
-              </a>
-
-
+            <template #cell(id)="data">
+              {{ "CL-" + data.item.id }}
             </template>
-            <!-- Column: Voice -->
-            <template #cell(voice)="data">
-              <b-button variant="success" @click="callNow(data.item)">
-                <span class="text-nowrap">Call Now</span>
-              </b-button>
-            </template>
-            <template #cell(schedule_time)="data">
-              {{ moment(data.item.timeslot_from).format("DD-MM-YYYY hh:mm A") }} - {{
-                moment(data.item.timeslot_to).format("DD-MM-YYYY hh:mm A") }}
-            </template>
-            <template #cell(duration)="data">
-              {{ moment(data.item.timeslot_to).diff(moment(data.item.timeslot_from), 'minutes') }} MINS
-            </template>
-            <template #cell(status)="data">
-              {{ data.item.status }}
-            </template>
-            <template #cell(rating)="data">
-            </template>
-            <template #cell(actions)="data">
-              <div class="text-nowrap" v-if="typeof $store.getters.user.detail !== 'undefined' &&
-                $store.getters.user.detail.cisf == '1'
-                ">
-              </div>
-              <div class="text-nowrap" v-else>
-                <!-- Client Modules -->
-                <feather-icon :id="`client-module-${data.item.id}-id`" icon="LayersIcon" size="16" class="mx-1" @click="
-                  $router.push({ name: 'client-modules', params: { id: data.item.id } })
-                  " />
-                <b-tooltip title="Client Modules" :target="`client-module-${data.item.id}-id`" />
-              </div>
+            <template #cell(age)="data">
+              {{ age(data.item.dob) }}
             </template>
           </b-table>
-
+          <b-pagination v-if="cpagination.total" v-model="cpagination.page" :page.sync="cpagination.page"
+            :total-rows="cpagination.total" :index="1" :per-page="cpagination.per_page" aria-controls="package-row"
+            align="right" @change="handlecPaginationChange">
+          </b-pagination>
+        </div>
+        <div :class="tabId === 'group_consultation' ? 'tab-pane active' : 'tab-pane'" id="group_consultation" role="tabpanel"
+          aria-labelledby="home-tab-justified" :key="key">
+          <b-table ref="refUserListTable" class="position-relative" :items="consultation_items" responsive :fields="consultationTableColumns"
+            primary-key="id" :sort-by.sync="sortBy" :totalRows="consultationTotalRows" show-empty
+            empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
+            <template #cell(user)="data">
+              <b-media vertical-align="center">
+                <template #aside>
+                  <b-avatar size="32" :src="data.item.avatar" :text="avatarText(data.item.name)"
+                    :variant="`light-primary`" :to="{ name: 'apps-users-view', params: { id: data.item.id } }" />
+                </template>
+                {{ data.item.name }}
+              </b-media>
+            </template>
+            <template #cell(id)="data">
+              {{ "CL-" + data.item.id }}
+            </template>
+            <template #cell(age)="data">
+              {{ age(data.item.dob) }}
+            </template>
+          </b-table>
+          <b-pagination v-if="cpagination.total" v-model="cpagination.page" :page.sync="cpagination.page"
+            :total-rows="cpagination.total" :index="1" :per-page="cpagination.per_page" aria-controls="package-row"
+            align="right" @change="handlecPaginationChange">
+          </b-pagination>
         </div>
       </div>
     </b-card>
@@ -312,59 +304,6 @@
           </b-row>
         </form>
       </validation-observer>
-    </b-modal>
-    <b-modal v-permission="['view-clients']" id="assigndh" ref="assigndh" ok-only ok-title="Close"
-      @show="getDiagnosticpartners" @hidden="resetDhData" centered size="lg" title="Diagnistic Partner Assignment"
-      no-close-on-backdrop>
-      <validation-observer #default="{ handleSubmit }" ref="observer">
-        <form ref="assigndhform" @submit.prevent="handleSubmit(onDhAssign)">
-          <b-row>
-            <b-col cols="10">
-              <b-form-group label="Search by address / pincode" label-for="searchdh">
-                <b-form-input id="searchdh" v-model="dhData.search" />
-              </b-form-group>
-            </b-col>
-            <b-col cols="2">
-              <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
-                :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="button" @click="getDiagnosticpartners()">
-                Search
-              </b-button>
-            </b-col>
-            <b-col cols="12">
-              <validation-provider #default="validationContext" name="diagnosticpartner" rules="required">
-                <b-form-group label="Select Diagnistic Partner" label-for="diagnosticpartner"
-                  :state="getValidationState(validationContext)">
-                  <v-select v-model="dhData.dh_id" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
-                    :options="diagnosticpartners" :reduce="(val) => val.id" :clearable="false"
-                    input-id="diagnosticpartners" />
-                  <b-form-invalid-feedback :state="getValidationState(validationContext)">
-                    {{ validationContext.errors[0] }}
-                  </b-form-invalid-feedback>
-                </b-form-group>
-              </validation-provider>
-            </b-col>
-          </b-row>
-          <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
-            :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="submit">
-            Assign
-          </b-button>
-        </form>
-      </validation-observer>
-      <b-table style="min-height: 250px;margin-top:10px" ref="refRolesTable" class="position-relative" :items="dhlist"
-        responsive :fields="dhcolumns" :totalRows="totalRows" primaryKey="index" :sort-by.sync="sortBy" show-empty
-        empty-text="No matching records found" :sort-desc.sync="isSortDirDesc" :sticky-header="true">
-        <template #cell(index)="data">
-          {{ data.index + 1 }}
-        </template>
-        <template #cell(name)="data">
-          <span class="text-primary">{{ data.item.name.toUpperCase() }}</span>
-        </template>
-        <template #cell(actions)="data">
-          <a @click="handleRemoveUser('dh', data.item.id)" style="cursor: pointer" title="remove">
-            <feather-icon icon="TrashIcon" />
-          </a>
-        </template>
-      </b-table>
     </b-modal>
     <b-modal v-permission="['view-clients']" id="assignincharge" ref="assignincharge" ok-only ok-title="Assign"
       @show="getIncharges" @hidden="resetInchargeData" @ok="handleInchargeOk" centered size="lg"
@@ -505,8 +444,6 @@ import formValidation from "@core/comp-functions/forms/form-validation";
 import ToastificationContent from "@core/components/toastification/ToastificationContent.vue";
 import { required } from "@validations";
 
-import moment from 'moment';
-
 export default {
   components: {
     BCard,
@@ -528,26 +465,28 @@ export default {
     BTooltip,
     vSelect,
     BFormGroup,
+    BFormInput,
+
     ValidationProvider,
     ValidationObserver,
     BFormCheckbox,
   },
   data() {
-    const { refFormObserver, getValidationState, resetForm, resetObserver, observer } = formValidation(
+    const { refFormObserver, getValidationState, resetForm } = formValidation(
       this.resetData,
       this.resetHcData,
-      this.resetDhData,
       this.resetInchargeData
     );
     return {
       tabId: 'program',
       items: [],
-      consultation_items: [],
+      consultation_items:[],
       perPage: 10,
       perPageOptions: [10, 25, 50, 100],
       totalRows: "",
       search: "",
       searchQuery: "",
+      consultationTotalRows: "",
       limit: "10",
       sortBy: "1",
       isSortDirDesc: false,
@@ -577,11 +516,6 @@ export default {
         { key: "phone", label: "Contact Number", sortable: true },
         { key: "actions", label: "Action", sortable: false },
       ],
-      dhcolumns: [
-        { key: "index", label: "Sr. No.", sortable: true },
-        { key: "name", label: "Diagnostic Partner name", sortable: true },
-        { key: "actions", label: "Action", sortable: false },
-      ],
       userData: {
         roles: [],
         consultants: [],
@@ -590,7 +524,6 @@ export default {
         q_ids: [],
       },
       hcData: {},
-      dhData: {},
       inchargeData: {
         ic_id: []
       },
@@ -608,46 +541,17 @@ export default {
       consultants: [],
       client: null,
       list: [],
-      dhlist: [],
       refFormObserver,
       getValidationState,
       resetForm,
-      resetObserver,
-      observer,
       required,
       healthcoaches: [],
-      diagnosticpartners: [],
       incharges: [],
       clientgroupData: {
         selected: [],
       },
       clientgroups: [],
       questinaries: [],
-
-
-      meetingitems: [],
-      meetingperPage: 10,
-      meetingperPageOptions: [10, 25, 50, 100],
-      meetingtotalRows: "",
-      meetingsearch: "",
-      meetingsearchQuery: "",
-      meetinglimit: "10",
-      meetingsortBy: '1',
-      meetingisSortDirDesc: false,
-      meetingtableColumns: [
-        { key: 'name', label: 'Client Name', sortable: true, },
-        { key: 'schedule_time', label: 'Schedule Time', sortable: true },
-        { key: 'duration', label: 'Duration', sortable: true },
-        { key: 'description', label: 'Description', sortable: true },
-        // { key: 'timeslot_from', label: 'From', sortable: true },
-        // { key: 'timeslot_to', label: 'To', sortable: true },
-        { key: 'video', label: 'Video Call', sortable: false },
-        { key: 'actions', label: 'Action', sortable: false },
-
-      ],
-      meetingkey: 0,
-      moment: moment
-
     };
   },
   props: {
@@ -665,17 +569,6 @@ export default {
     this.getConsultationList();
     this.columns();
     this.getRoles();
-    this.fetchMeetings();
-    if (![2, 3].includes(this.role_id)) {
-      this.meetingtableColumns.push({ key: 'voice', label: 'Audio Call', sortable: false });
-    }
-    if ([2, 3].includes(this.$store.state.auth.user.role_id)) {
-      this.meetingtableColumns[0].label = "Consultant Name"
-    } else {
-      this.meetingtableColumns[0].label = "Client Name"
-    }
-    this.meetingtableColumns.push({ key: 'status', label: 'Status', sortable: false });
-    this.meetingtableColumns.push({ key: 'rating', label: 'Rating', sortable: false });
   },
   methods: {
     age: function age(dob) {
@@ -730,21 +623,10 @@ export default {
           // { key: 'phone', label: 'Contact Number', sortable: true },
           { key: "actions" },
         ];
-      } else if (this.$store.getters.user.role_id == 2) {
-        this.tableColumns = [
-          { key: "selected", label: "", sortable: false },
-          { key: "id", label: "User Id", sortable: true },
-          { key: "name", label: "Full Name", sortable: true },
-          { key: "gender", label: "Gender", sortable: true },
-          { key: "age", label: "Age", sortable: true },
-          { key: "group_name", label: "Group", sortable: true },
-          { key: "status", label: "Status", sortable: true },
-          { key: "actions" },
-        ];
       } else if (
         this.$store.getters.user.role_id == 11 &&
-        typeof this.$store.getters.user.detail !== "undefined" &&
-        this.$store.getters.user.detail.cisf == "1"
+        typeof this.$store.getters.user.detail !== "undefined" && 
+        $store.getters.user.detail && this.$store.getters.user.detail.cisf == "1"
       ) {
         this.tableColumns = [
           { key: "id", label: "Id", sortable: true },
@@ -764,17 +646,6 @@ export default {
           { key: "role", label: "Consultant type", sortable: true },
           { key: "name", label: "Consultant name", sortable: true },
           { key: "actions", label: "Action", sortable: false },
-        ];
-      }
-      if (this.$store.getters.user.role_id == 17 || this.$store.getters.user.role_id == 18 || this.$store.getters.user.role_id == 19) {
-        this.tableColumns = [
-          { key: "id", label: "Id", sortable: true },
-          { key: "name", label: "Full Name", sortable: true },
-          { key: "gender", label: "Gender", sortable: true },
-          { key: "age", label: "Age", sortable: true },
-          { key: "investigation", label: "Investigation", sortable: true },
-          { key: "status", label: "Status", sortable: true },
-          { key: "call", label: "Call", sortable: true },
         ];
       }
     },
@@ -840,10 +711,6 @@ export default {
       this.client = client;
       this.$refs["assignhc"].show();
     },
-    viewAssigndhModal(client) {
-      this.client = client;
-      this.$refs["assigndh"].show();
-    },
     viewUserModal(client) {
       this.client = client;
       this.$refs["view-users"].show();
@@ -907,18 +774,10 @@ export default {
       bvModalEvt.preventDefault();
       this.$refs.refFormObserver.handleSubmit(this.onHcAssign);
     },
-    handleDhOk(bvModalEvt) {
-      bvModalEvt.preventDefault();
-      this.$refs.refFormObserver.handleSubmit(this.onDhAssign);
-    },
+
     resetHcData() {
       this.hcData = {
         hc_id: "",
-      };
-    },
-    resetDhData() {
-      this.dhData = {
-        dh_id: "",
       };
     },
     resetUsers() {
@@ -966,34 +825,6 @@ export default {
       }
     },
 
-    async onDhAssign() {
-      try {
-        this.dhData.client_id = this.client.id;
-        const { data } = await axios.post("/client/dhassignment", this.dhData);
-        this.$toast({
-          component: ToastificationContent,
-          props: {
-            title: data.message,
-            icon: "BellIcon",
-            variant: data.success ? "success" : "danger",
-          },
-        });
-        this.$nextTick(() => {
-          //this.$refs["assigndh"].hide();
-          this.getAssignedDiagnosticpartners();
-          this.getDiagnosticpartners();
-          this.resetDhData();
-          // this.$refs.assigndhform.reset()
-          // this.$refs.assigndhform.resetValidation();
-          // this.resetObserver();
-          this.$refs.observer.reset();
-        });
-        this.getList();
-      } catch (err) {
-        console.log(err);
-      }
-    },
-
     async getAssignedUsers() {
       try {
         let id = this.client.id;
@@ -1019,8 +850,6 @@ export default {
           },
         });
         this.getAssignedUsers();
-        this.getAssignedDiagnosticpartners();
-        this.getDiagnosticpartners();
       } catch (error) {
         this.$toast({
           component: ToastificationContent,
@@ -1065,30 +894,6 @@ export default {
         console.log(error);
       }
     },
-    async getDiagnosticpartners() {
-      try {
-        this.diagnosticpartners = [];
-        var search = (this.dhData.search) ? this.dhData.search : '';
-        const { data } = await axios.get("/dh/list", {
-          params: { client_id: this.client.id, search: search },
-        });
-        this.diagnosticpartners = data.users;
-        this.getAssignedDiagnosticpartners();
-      } catch (error) {
-        console.log(error);
-      }
-    },
-    async getAssignedDiagnosticpartners() {
-      try {
-        const { data } = await axios.get("/client/dhlist/" + this.client.id, {
-          params: {},
-        });
-        this.dhlist = data.diagnosticpartners;
-      } catch (error) {
-        console.log(error);
-      }
-    },
-
     async updatestatus(item) {
       try {
         const { data } = await axios.post(`/client/updatestatus/`, { id: item.id });
@@ -1283,70 +1088,9 @@ export default {
     showConsultationClient() {
       this.tabId = 'consultation';
     },
-    async fetchMeetings() {
-      try {
-        const { data } = await axios.get(`/meetings/list?type=all`);
-        this.meetingitems = data.schedules;
-        this.meetingtotalRows = data.totalRows;
-      } catch {
-        this.$toast({
-          component: ToastificationContent,
-          props: {
-            title: 'Error fetching meeting list',
-            icon: 'AlertTriangleIcon',
-            variant: 'danger',
-          },
-        })
-      }
-    },
-
-    async generateVideoLink(schedule) {
-      try {
-        const { data } = await axios.post(`/meeting/link`, schedule);
-        if (data.success) {
-          this.fetchMeetings();
-        }
-        this.$toast({
-          component: ToastificationContent,
-          props: {
-            title: data.message,
-            icon: 'AlertTriangleIcon',
-            variant: data.success ? 'success' : 'danger',
-          },
-        })
-      } catch {
-        this.$toast({
-          component: ToastificationContent,
-          props: {
-            title: 'Error generating video link',
-            icon: 'AlertTriangleIcon',
-            variant: 'danger',
-          },
-        })
-      }
-    },
-    async callNow(item) {
-      try {
-        const { data } = await axios.post(`/call/now`, item);
-        this.$toast({
-          component: ToastificationContent,
-          props: {
-            title: data.message,
-            icon: 'AlertTriangleIcon',
-            variant: data.success ? 'success' : 'danger',
-          },
-        })
-      } catch {
-        this.$toast({
-          component: ToastificationContent,
-          props: {
-            title: 'Error while initiating a call',
-            icon: 'AlertTriangleIcon',
-            variant: 'danger',
-          },
-        })
-      }
-    },
+    showGroupConsultation() {
+      this.tabId = 'group_consultation';
+    }
   },
 };
 </script>

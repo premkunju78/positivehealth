@@ -139,6 +139,7 @@ export default {
   data() {
     return {
       client_id: this.id,
+      consultation_type: 'regular',
       tabId: "calendar",
       list: [],
       calendarOptions: {
@@ -154,9 +155,24 @@ export default {
     };
   },
   created() {
+    if(this.$route.name === 'workshopcalendars') {
+      this.consultation_type = 'workshop';
+    }
+
     this.getList();
   },
+  watch:{
+    $route (to, from){
 
+      if(this.$route.name === 'workshopcalendars') {
+        this.consultation_type = 'workshop';
+      }else{
+        this.consultation_type = 'regular';      
+      }
+
+      this.getList();
+    }
+  },
   methods: {
     validateSize,
     async getList() {
@@ -167,7 +183,7 @@ export default {
         } else {
           this.pagination.filters.user_id = this.$store.getters.user.id;
         }
-        const { data } = await axios.get("workflowschedules/events", {
+        const { data } = await axios.get(`workflowschedules/events?consultation_type=${this.consultation_type}`, {
           params: this.pagination,
         });
         if (data.events) {

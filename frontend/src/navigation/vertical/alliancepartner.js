@@ -49,7 +49,16 @@ export default [{
         },
         {
             title: 'Queries',
-            route: 'enquiries',
+            children: [
+                {
+                    title: 'Ask Query',
+                    route: 'ask-query',
+                },
+                {
+                    title: 'List',
+                    route: 'enquiries',
+                },
+            ]
         },
         {
             title: 'Feedback',

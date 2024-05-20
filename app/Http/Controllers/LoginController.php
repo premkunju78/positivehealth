@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AlianClient;
+use App\Models\ClientGroupMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
@@ -45,7 +46,7 @@ class LoginController extends Controller
       ], 422);
     }
 
-    if (!empty($request->url) && $user->role_id != 2) {
+    if (!empty($request->url) && $user->role_id != 2 && $user->role_id != 3) {
       return response()->json([
         'error_msg' => ['Please login with valid url.']
       ], 422);
@@ -64,7 +65,19 @@ class LoginController extends Controller
 
     $user->company_name = $user->role_id === 2 ? $user->detail->company_name : $user->name;
 
-
+    if ($user->role_id == 3 && $request->group_id && !empty($request->group_id)) {
+      ClientGroupMapping::updateOrCreate(
+          [
+              'client_id' => $user->id,
+              'group_id' => $request->group_id,
+          ],
+          [
+              'client_id' => $user->id,
+              'group_id' => $request->group_id,
+          ]
+      );      
+    }
+    
     $token = $user->createToken($request->device_name)->plainTextToken;
 
     return response()->json(['user' => $user, 'token' => $token,   'permissions' => $this->getPermissions($user, $request)]);

@@ -12,10 +12,10 @@ export default {
           .catch(error => reject(error))
       })
     },
-    async fetchInvestigation(ctx, { id }) {
+    async fetchInvestigation(ctx, { id, client_id }) {
       return new Promise((resolve, reject) => {
         axios
-          .get(`/investigation/${id}`)
+          .get(`/investigation/${id}?client_id=${client_id}`)
           .then(response => resolve(response))
           .catch(error => reject(error))
       })

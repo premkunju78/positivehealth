@@ -76,8 +76,13 @@
                             <feather-icon icon="TrashIcon" />
                             <span class="align-middle ml-50">Delete</span>
                         </b-dropdown-item>
+                        <b-dropdown-item :to="{name: 'viewPrescription', params:{id: data.item.id, client_id: $route.params.id}}" v-permission="['delete-prescription']">
+                                <feather-icon icon="EyeIcon" />
+                                <span class="align-middle ml-50" >View</span>
+                        </b-dropdown-item>
                     </b-dropdown>
-                     <b-link :to="{name: 'viewPrescription', params:{id: data.item.id}}" v-if="role === 3">
+                    <b-link :to="{name: 'viewPrescription', params:{id: data.item.id, client_id: $store.state.auth.user.id}}" 
+                    v-if="role === 3">
                             <feather-icon icon="EyeIcon" />
                             <span class="align-middle ml-50" >View</span>
                     </b-link>
@@ -162,10 +167,7 @@ export default {
         else if( this.role !== 1 || !this.id) 
         {
             this.columns.shift(); this.columns.shift();
-            this.columns.unshift( { key: "phone", label: "Phone", sortable: true });
-            this.columns.unshift( { key: "client", label: "Client Name", sortable: true });
-            this.columns.unshift(  { key: "no", label: "No", sortable: true } );
-            this.columns.unshift( { key: "index", label: "Sr. No.", sortable: true });
+            this.columns.unshift(  { key: "no", label: "Prescription No", sortable: true } );
         }
         this.getList();
     },
@@ -187,7 +189,7 @@ export default {
         const isSortDirDesc = false;
         const columns = [
             { key: "index", label: "Sr. No.", sortable: true },
-            { key: "no", label: "No", sortable: true },
+            { key: "no", label: "Prescription No", sortable: true },
             { key: "instructions", label: "Instructions", sortable: true },
             { key: "created_at", label: "Date", sortable: true },
             { key: "actions", label: "Actions", sortable: false },

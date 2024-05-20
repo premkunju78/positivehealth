@@ -17,7 +17,11 @@ class TestController extends Controller
         ->select('tests.*','test_categories.name as category')
         ->orderBy('tests.created_at','desc')
         ->orderBy('tests.test_category_id');
-                    
+        
+        if ($request->category) {
+            $tests->where('tests.test_category_id', $request->category);
+        }            
+
         $t1 = clone $tests;
         return response()->json([
             'testItems' => $t1->limit($request->per_page)->offset(($request->page-1)*$request->per_page )->get(),

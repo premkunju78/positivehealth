@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Availability;
 use App\Models\Booking;
 use App\Models\ClientConsultant;
+use App\Models\WorkflowSchedule;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -143,5 +144,28 @@ class BookingController extends Controller
         } else {
             return response()->json(['success' => false, 'message' => 'Booking not found!']);
         }
+    }
+
+    public function trigger_enablex_webhook_request(Request $request) {
+        $request_data = $request->all();
+        if($request_data['type'] == "session_start") {
+            $room_id = $request_data['room_id'];
+            WorkflowSchedule::where('participant_link', 'LIKE', '%'.$room_id.'%')->update([
+                'call_start_on' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        if($request_data['type'] == "session_stop") {
+            $room_id = $request_data['room_id'];
+            WorkflowSchedule::where('participant_link', 'LIKE', '%'.$room_id.'%')->update([
+                'call_end_on' => date('Y-m-d H:i:s'),
+                'is_call_end' => 1
+            ]);
+        }
+
+        $content = json_encode($request_data);
+        $fp = fopen($_SERVER['DOCUMENT_ROOT'] . "/".$request_data['type']."-myEnablex.txt","wb");
+        fwrite($fp,$content);
+        fclose($fp);
     }
 }

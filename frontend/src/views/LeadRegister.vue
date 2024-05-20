@@ -260,6 +260,10 @@ export default {
     if (this.url) {
       this.getBannerLogo(this.url);
     }
+
+    if(this.$route.query.phone) {
+      this.leadData.phone = this.$route.query.phone;
+    }
   },
   setup() {
     // App Name
@@ -336,51 +340,58 @@ export default {
   methods: {
 
     async sendOtp() {
-      const provider = this.$refs['refFormObserver'];
-      provider.validate().then(async result => {
-        if (result) {
-          this.processing = true;
-          var this_this = this;
-          this.allerrors = [];
-          await axios.get("/sanctum/csrf-cookie");
-          await axios
-            .post("/lead/sendotp", this.leadData)
-            .then((response) => {
-              if (response.data.success) {
-                this.errors = {};
-                this.$toast({
-                  component: ToastificationContent,
-                  props: {
-                    title: "OTP sent successfully",
-                    icon: "EditIcon",
-                    variant: "success",
-                  },
-                });
-                this.errors = [];
-                this.showOtp = true;
-                this.showdefault = false;
-              } else {
-                this.$toast({
-                  component: ToastificationContent,
-                  props: {
-                    title: "Invalid mobile number",
-                    icon: "EditIcon",
-                    variant: "error",
-                  },
-                });
-              }
-            })
-            .catch(({ response }) => {
-              this.errors = response.data.errors;
-            })
-            .finally(() => {
-              this.processing = false;
-            });
-        } else {
-        }
-      });
-
-
+      if(this.$route.query.phone) {
+        this.errors = [];
+        this.showPassword = true;
+        this.showOtp = false;      
+        this.showdefault = false;
+        this.processing = false;
+      } else {
+        const provider = this.$refs['refFormObserver'];
+        provider.validate().then(async result => {
+          if (result) {
+            this.processing = true;
+            var this_this = this;
+            this.allerrors = [];
+            await axios.get("/sanctum/csrf-cookie");
+            await axios
+              .post("/lead/sendotp", this.leadData)
+              .then((response) => {
+                if (response.data.success) {
+                  this.errors = {};
+                  this.$toast({
+                    component: ToastificationContent,
+                    props: {
+                      title: "OTP sent successfully",
+                      icon: "EditIcon",
+                      variant: "success",
+                    },
+                  });
+                  this.errors = [];
+                  this.showOtp = true;
+                  this.showdefault = false;
+                } else {
+                  this.$toast({
+                    component: ToastificationContent,
+                    props: {
+                      title: "Invalid mobile number",
+                      icon: "EditIcon",
+                      variant: "error",
+                    },
+                  });
+                }
+              })
+              .catch(({ response }) => {
+                this.errors = response.data.errors;
+              })
+              .finally(() => {
+                this.processing = false;
+              });
+          } else {
+          
+          }
+        });
+      }
     },
     async verifyOTP() {
       this.processing = true;

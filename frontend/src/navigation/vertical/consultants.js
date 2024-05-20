@@ -15,19 +15,26 @@ export default [{
 
     },
     {
-        title: 'Schedules',
-        route: 'schedules',
+        title: 'Today\'s Appointments',
+        route: 'todays-schedules',
         permission: ['view-appointments'],
 
     },
     {
-        title: "Today's Meeting",
-        route: 'meetings',
-        permission: ['view-video-meeting'],
+        title: 'Upcoming Appointments',
+        route: 'upcoming-schedules',
+        permission: ['view-appointments'],
+
     },
     {
-        title: 'Session schedules',
-        route: 'workflowschedules',
+        title: 'Past Appointments',
+        route: 'past-schedules',
+        permission: ['view-appointments'],
+
+    },
+    {
+        title: 'Workshop Calendar',
+        route: 'workshopcalendars',
     },
     ],
 
@@ -69,11 +76,6 @@ export default [{
         //     route: 'packageGroups',```
         // },
     ],
-},
-{
-    title: 'League Consultants',
-    icon: 'UsersIcon',
-    route: 'Consultations',
 },
 {
     title: 'Questionnaire',
@@ -129,15 +131,18 @@ export default [{
             ],
         },
         {
-            title: 'Queries',
-            route: 'enquiries',
-        },
-        {
             title: 'Testimonials',
         },
     ],
 },
 
+{
+    title: 'Upgrade To Premium',
+    icon: 'StarIcon',
+    icon_right: 'StarIcon',
+    classes: 'upgrade-menu',
+    route: 'upgrade-to-premium',
+},
 
 {
     title: 'Affirmations',

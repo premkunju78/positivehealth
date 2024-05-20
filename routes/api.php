@@ -139,12 +139,18 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/consultants/{id}/edit',  [UserController::class, 'edit']);
     Route::get('/consultants/list',  [UserController::class, 'list']);
     Route::post('/consultants/{id}',  [UserController::class, 'update']);
+    Route::post('/users/update-location-availability/{id}',  [UserController::class, 'update_availability_status']);
     Route::get('/consultant/client/list',  [UserController::class, 'clientList']);
     Route::get('/consultants/{id}/videos',  [UserController::class, 'videos']);
-    Route::put('/consultants/{id}/upgrade',  [UserController::class, 'upgrade']);
+    Route::post('/consultants/{id}/upgrade',  [UserController::class, 'upgrade']);
+    Route::get('/consultant/{id}/is_upgrade',  [UserController::class, 'check_upgrade']);
     
+    Route::post('/consultants/assign/{aliance_id}',  [UserController::class, 'consultants_assign_to_ap']);
     Route::delete('/consultant/{id}',  [UserController::class, 'destroy']);
     Route::get('/incharges/list',  [UserController::class, 'inchargelist']);
+    
+    Route::post('/make-favorites-consultants',  [UserController::class, 'makeFavoritesConsultants']);
+    Route::get('/get-favorites-consultants',  [UserController::class, 'getFavoritesConsultants']);
 
 
 
@@ -169,6 +175,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::put('/clients/{id}',  [ClientController::class, 'update']);
     Route::get('/client/list',  [ClientController::class, 'list']);
     Route::get('/client/{id}',  [ClientController::class, 'show']);
+    Route::post('/client/cancel_referral',  [ClientController::class, 'cancel_referral']);
 
     
     Route::get('clientgroup/list', [ClientGroupController::class, 'list']);
@@ -177,7 +184,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/client/dhlist/{id}',  [ClientController::class, 'dhlist']);
 
     Route::apiResource('clientGroup', ClientGroupController::class);
-
+    Route::post('/clientgroup/meeting/link',  [ClientGroupController::class, 'createLink']);
+    Route::post('/clientgroup/payment/link',  [ClientGroupController::class, 'generatepaymentlink']);
+    Route::post('/clientgroup/allianassignment',  [ClientGroupController::class, 'alliangroupassignment']);
+    Route::get('/clientgroup/get_next_group_id',  [ClientGroupController::class, 'get_next_group_id']);
 
 
     //---------------------Coordinator Management-------------------------//
@@ -195,6 +205,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/coordinators/getallianceCood/{id}',  [CoordinatorController::class, 'getallianceCood']);
     Route::delete('/coordinators/{id}',  [CoordinatorController::class, 'destroy']);
 
+    //---------------------Consultant Management-------------------------//
+    
 
     Route::get('/mh/list',  [MarketingheadController::class, 'list']);
     Route::get('/mh',  [MarketingheadController::class, 'index']);
@@ -205,12 +217,28 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::delete('/mh/{id}',  [MarketingheadController::class, 'destroy']);
 
     Route::get('/dh/list',  [DiagnosticheadController::class, 'list']);
+    Route::get('/dh/getalliancepartners/{id}',  [DiagnosticheadController::class, 'getalliancepartners']);
     Route::get('/dh',  [DiagnosticheadController::class, 'index']);
     Route::post('/dh',  [DiagnosticheadController::class, 'store']);
     Route::get('/dh/{id}',  [DiagnosticheadController::class, 'show']);
     Route::post('/dh/{id}',  [DiagnosticheadController::class, 'update']);
     Route::get('/dh/{id}/edit',  [DiagnosticheadController::class, 'edit']);
     Route::delete('/dh/{id}',  [DiagnosticheadController::class, 'destroy']);
+
+    Route::post('/dh/investigation/store',  [DiagnosticheadController::class, 'investigation_store']);
+    Route::get('/dh/investigation/items/list',  [DiagnosticheadController::class, 'investigation_list']);
+
+    Route::post('/dh/healthpackages/store',  [DiagnosticheadController::class, 'healthpackages_store']);
+    Route::get('/dh/healthpackages/list',  [DiagnosticheadController::class, 'healthpackages_list']);
+
+    Route::post('/dh/onsitetests/store',  [DiagnosticheadController::class, 'onsitetests_store']);
+    Route::get('/dh/onsitetests/list',  [DiagnosticheadController::class, 'onsitetests_list']);
+
+    Route::post('/dh/centres/store',  [DiagnosticheadController::class, 'centres_store']);
+    Route::get('/dh/centres/list',  [DiagnosticheadController::class, 'centres_list']);
+
+    Route::post('/dh/settings/store',  [DiagnosticheadController::class, 'settings_store']);
+    Route::get('/dh/settings/list',  [DiagnosticheadController::class, 'settings_list']);
 
 
     Route::get('/samplecollector/list',  [SamplecollectorController::class, 'list']);
@@ -256,6 +284,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/workflowschedules/messages/{id}', [WorkflowscheduleController::class, 'getMessageList']);
     Route::post('/workflow/call/now', [WorkflowscheduleController::class, 'callNow']);
     Route::post('/workflow/meeting/link/{id}',  [WorkflowscheduleController::class, 'createLink']);
+    Route::get('/workflowschedules/check-running-schedule-status/{schedule_id}', [WorkflowscheduleController::class, 'checkRunningScheduleStatus']);
 
 
 
@@ -265,7 +294,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/enquiries/updatestatus', [EnquiryController::class, 'updatestatus']);
     Route::post('/enquiries/update', [EnquiryController::class, 'update']);
     Route::post('/enquiries/hcassignment', [EnquiryController::class, 'hcassignment']);
-
+    Route::post('/enquiries/create_for_program', [EnquiryController::class, 'create_for_program']);
+    Route::post('/enquiries/call_init',  [EnquiryController::class, 'call']);
 
     //---------------------Healthcoach Management-------------------------//
     Route::post('/healthcoaches/assignment',  [AssignmentController::class, 'storeUserClientAssignment']);
@@ -428,6 +458,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::put('/investigation/{id}/upload',  [InvestigationController::class, 'removeFile']);
     Route::apiResource('investigation', InvestigationController::class);
     Route::post('/investigation/updateTestData',  [InvestigationController::class, 'updateTestData']);
+    Route::post('/investigation/scassignment',  [InvestigationController::class, 'scassignment']);
+    Route::post('/investigation/updatestatus/{id}',  [InvestigationController::class, 'updatestatus']);
 
     //--------------------- Test Category Management------------------------------------//
 
@@ -482,10 +514,15 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/chat/sendmessage', [ChatController::class, 'sendmessage']);
     Route::post('/alliancepartner/callcoordinator', [AlliancePartnerController::class, 'callcoordinator']);
 });
+
+Route::get('/clientgroup/view/{id}',  [ClientGroupController::class, 'show']);
+Route::post('/validate_external_client',  [ClientGroupController::class, 'validate_external_client']);
 Route::get('/users/roles',  [UserController::class, 'get_users_and_roles']);
-Route::post('/enquiries/call_init',  [EnquiryController::class, 'call']);
 Route::get('/lead/program/{id}',  [LeadController::class, 'assignedprogram']);
 Route::post('razorpay/leadorder', [RazorpayController::class, 'leadorder'])->name('leadorder');
+Route::post('razorpay/consultantorder', [RazorpayController::class, 'consultantorder'])->name('consultantorder');
+Route::post('razorpay/consultantpayment/{id}', [RazorpayController::class, 'consultantpayment'])->name('consultantpayment');
 Route::post('razorpay/leadpayment', [RazorpayController::class, 'leadpayment'])->name('leadpayment');
 Route::get('/checkcoupon', [DiscountCouponController::class, 'validateCouponCode']);
 Route::post('/submit_html_questinnaires', [HtmlquestionnaireController::class, 'submit_html_questinnaires']);
+Route::post('/enablex-webhook-request', [BookingController::class, 'trigger_enablex_webhook_request']);

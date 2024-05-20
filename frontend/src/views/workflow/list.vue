@@ -20,7 +20,7 @@
           </div>
         </b-col>
       </b-row>
-      <div>
+      <div v-if="is_reschedule == false">
         <h4>Program Details</h4>
         <table v-if="programs.length" class="table table-striped">
           <thead>
@@ -70,7 +70,8 @@
           <b-form @submit.prevent="handleSubmit(onSubmit)">
             <b-row class="d-flex justify-content-center">
               <b-col cols="20" md="12">
-                <h4>Create Schedule</h4>
+                <h4 v-if="is_reschedule == false">Create Schedule</h4>
+                <h4 v-if="is_reschedule != false">Reschedule Appointment (AP01/CL-{{ id }}/P{{ is_reschedule }})</h4>
                 <b-row class="mt-2">
                   <b-col cols="12" md="4">
                     <!-- First Name -->
@@ -85,20 +86,33 @@
                       </b-form-group>
                     </validation-provider>
                   </b-col>
-                  <b-col cols="12" md="4">
+                  <b-col cols="12" md="4" v-if="is_reschedule == false">
                     <!-- First Name -->
-                    <validation-provider #default="validationContext" name="Schedule Type" rules="required">
-                      <b-form-group label="Schedule Type" label-for="schedule_type"
+                    <validation-provider #default="validationContext" name="Schedule Sessions" rules="required">
+                      <b-form-group label="Schedule Sessions" label-for="schedule_session"
                         :state="getValidationState(validationContext)">
-                        <v-select v-model="scheduleData.type" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
-                          :options="scheduleTypes" :reduce="(val) => val" :clearable="false" />
+                        <v-select v-model="scheduleData.session" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                          :options="scheduleSessions" :reduce="(val) => val" :clearable="false" @input="validateScheduleTypes" />
                         <b-form-invalid-feedback :state="getValidationState(validationContext)">
                           {{ validationContext.errors[0] }}
                         </b-form-invalid-feedback>
                       </b-form-group>
                     </validation-provider>
                   </b-col>
-                  <b-col cols="12" md="4">
+                  <b-col cols="12" md="4" v-if="is_reschedule == false && show_session_types == true">
+                    <!-- First Name -->
+                    <validation-provider #default="validationContext" name="Schedule Types" rules="required">
+                      <b-form-group label="Schedule Types" label-for="schedule_type"
+                        :state="getValidationState(validationContext)">
+                        <v-select v-model="scheduleData.type" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                          :options="scheduleTypes" :reduce="(val) => val.id" :clearable="false" />
+                        <b-form-invalid-feedback :state="getValidationState(validationContext)">
+                          {{ validationContext.errors[0] }}
+                        </b-form-invalid-feedback>
+                      </b-form-group>
+                    </validation-provider>
+                  </b-col>
+                  <b-col cols="12" md="4" v-if="is_reschedule == false">
                     <!-- First Name -->
                     <validation-provider #default="validationContext" name="Title" rules="required">
                       <b-form-group label="Title" label-for="first_name">
@@ -114,13 +128,13 @@
                       </b-form-group>
                     </validation-provider>
                   </b-col>
-                  <b-col cols="8" md="4" sm="6" class="justify-content-start mb-1 mb-md-0">
+                  <b-col cols="8" md="4" sm="6" class="justify-content-start mb-1 mb-md-0" v-if="is_reschedule == false">
                     <b-form-group label="Role" label-for="role">
                       <v-select v-model="scheduleData.role" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
                         :options="roles" :reduce="(val) => val.id" :clearable="true" />
                     </b-form-group>
                   </b-col>
-                  <b-col cols="8" md="4" sm="6" class="justify-content-start mb-1 mb-md-0">
+                  <b-col cols="8" md="4" sm="6" class="justify-content-start mb-1 mb-md-0" v-if="is_reschedule == false">
                     <b-form-group label="Instruction" label-for="instruction">
                       <v-select v-model="scheduleData.instruction" :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
                         :options="instructions" :reduce="(val) => val.id" :clearable="true" />
@@ -198,7 +212,7 @@
                       </b-form-group>
                     </validation-provider>
                   </b-col>
-                  <b-col cols="12" md="4">
+                  <b-col cols="12" md="4" v-if="is_reschedule == false">
                     <validation-provider #default="validationContext" name="assignedtoclients">
                       <b-form-group label="Assign To Other Clients" label-for="assignedtoclients"
                         :state="getValidationState(validationContext)">
@@ -217,7 +231,7 @@
             <b-row>
               <b-col cols="12" class="mt-2">
                 <!-- Action Buttons -->
-                <router-link :to="{ name: 'coordinators' }">
+                <router-link :to="{ name: 'coordinators' }" v-if="is_reschedule == false">
                   <b-button variant="outline-secondary" type="reset" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
                     :block="$store.getters['app/currentBreakPoint'] === 'xs'">
                     Back
@@ -225,57 +239,65 @@
                 </router-link>
 
                 <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
-                  :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="submit">
+                  :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="submit" v-if="is_reschedule == false">
                   Save Changes
                 </b-button>
+
+                <b-button variant="primary" class="mb-1 mb-sm-0 mr-0 mr-sm-1"
+                  :block="$store.getters['app/currentBreakPoint'] === 'xs'" type="submit" v-if="is_reschedule != false">
+                  Reschedule
+                </b-button>
+
               </b-col>
             </b-row>
           </b-form>
         </validation-observer>
       </div>
-      <h4>Schedule Details</h4>
-      <b-table style="min-height: 250px; margin-top: 20px" ref="refRolesTable" class="position-relative" :items="list"
-        responsive :fields="columns" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy" show-empty
-        empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
-        <!-- Column: Actions -->
-        <template #cell(index)="data">
-          {{ data.index + 1 }}
-        </template>
-        <template #cell(schedule_datettime)="data">
-          {{ moment(data.item.schedule_datettime).format("hh:mm A DD-MM-YYYY") }}
-        </template>
-        <template #cell(status)="data">
-          <b-form-group label="" label-cols="10" class="status_Text">
-            {{ data.item.status }}
-          </b-form-group>
-        </template>
-        <template #cell(actions)="data">
-          <b-dropdown variant="link" no-caret v-permission="['view-workflows']">
-            <template #button-content>
-              <feather-icon icon="MoreVerticalIcon" size="16" class="align-middle text-body" />
-            </template>
-            <b-dropdown-item @click="viewSchedule(data.item)" v-permission="['view-workflows']">
-              <feather-icon icon="EyeIcon" />
-              <span class="align-middle ml-50">View</span>
-            </b-dropdown-item>
-            <b-dropdown-item @click="viewAssignModal(data.item)" v-permission="['view-workflows']" v-if="$store.state.auth.user.detail &&
-              $store.state.auth.user.detail.incharge == '1' &&
-              data.item.status != 'Completed'
-              ">
-              <feather-icon icon="EyeIcon" />
-              <span class="align-middle ml-50">Assign</span>
-            </b-dropdown-item>
-            <b-dropdown-item @click="editSchedule(data.item)" v-permission="['create-workflows']">
-              <feather-icon icon="EditIcon" />
-              <span class="align-middle ml-50">Edit</span>
-            </b-dropdown-item>
-          </b-dropdown>
-        </template>
-      </b-table>
-      <b-pagination v-if="pagination.total" v-model="pagination.page" :page.sync="pagination.page"
-        :total-rows="pagination.total" :index="1" :per-page="pagination.per_page" aria-controls="package-row"
-        align="right" @change="handlePaginationChange">
-      </b-pagination>
+      <div class="table-schedule-details" v-if="is_reschedule == false">
+        <h4>Schedule Details</h4>
+        <b-table style="min-height: 250px; margin-top: 20px" ref="refRolesTable" class="position-relative" :items="list"
+          responsive :fields="columns" :totalRows="pagination.total" primaryKey="index" :sort-by.sync="sortBy" show-empty
+          empty-text="No matching records found" :sort-desc.sync="isSortDirDesc">
+          <!-- Column: Actions -->
+          <template #cell(index)="data">
+            {{ data.item.scheduled_no }}
+          </template>
+          <template #cell(schedule_datettime)="data">
+            {{ moment(data.item.schedule_datettime).format("hh:mm A DD-MM-YYYY") }}
+          </template>
+          <template #cell(status)="data">
+            <b-form-group label="" label-cols="10" class="status_Text">
+              {{ data.item.status }}
+            </b-form-group>
+          </template>
+          <template #cell(actions)="data">
+            <b-dropdown variant="link" no-caret v-permission="['view-workflows']">
+              <template #button-content>
+                <feather-icon icon="MoreVerticalIcon" size="16" class="align-middle text-body" />
+              </template>
+              <b-dropdown-item @click="viewSchedule(data.item)" v-permission="['view-workflows']">
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">View</span>
+              </b-dropdown-item>
+              <b-dropdown-item @click="viewAssignModal(data.item)" v-permission="['view-workflows']" v-if="$store.state.auth.user.detail &&
+                $store.state.auth.user.detail.incharge == '1' &&
+                data.item.status != 'Completed'
+                ">
+                <feather-icon icon="EyeIcon" />
+                <span class="align-middle ml-50">Assign</span>
+              </b-dropdown-item>
+              <b-dropdown-item @click="editSchedule(data.item)" v-permission="['create-workflows']">
+                <feather-icon icon="EditIcon" />
+                <span class="align-middle ml-50">Edit</span>
+              </b-dropdown-item>
+            </b-dropdown>
+          </template>
+        </b-table>
+        <b-pagination v-if="pagination.total" v-model="pagination.page" :page.sync="pagination.page"
+          :total-rows="pagination.total" :index="1" :per-page="pagination.per_page" aria-controls="package-row"
+          align="right" @change="handlePaginationChange">
+        </b-pagination>
+      </div>
     </div>
     <b-modal id="schedule-modal" hide-footer>
       <template #modal-title> Schedule Info </template>
@@ -484,7 +506,9 @@ export default {
       programs: [],
       instructions: [],
       schedule: {},
-      scheduleTypes: [
+      is_reschedule: false,
+      show_session_types: true,
+      scheduleSessions: [
         "Call",
         "Video assignment",
         "Assessment",
@@ -494,6 +518,16 @@ export default {
         "Diet plan",
         "Video consultation",
         "Training session",
+      ],
+      scheduleTypes: [
+        {
+          "id": "video",
+          "label": "Video Call",
+        },
+        {
+          "id": "audio",
+          "label": "Audio Call" 
+        }
       ],
       config: {
         timePicker: {
@@ -520,7 +554,7 @@ export default {
   setup(props) {
     const columns = [
       { key: "index", label: "Sr. No.", sortable: true },
-      { key: "schedule_datettime", label: "Schedule Date & Time", sortable: true },
+      { key: "schedule_datettime", label: "Date & Time", sortable: true },
       { key: "type", label: "Schedule Type", sortable: true },
       { key: "title", label: "Title", sortable: true },
       { key: "assignedto_user", label: "Assigned To", sortable: false },
@@ -580,6 +614,11 @@ export default {
     },
   },
   created() {
+    
+    if(this.$route.query.schedule_id) {
+      this.is_reschedule = this.$route.query.schedule_id;
+    }
+
     this.getList();
     this.getConsultants();
     this.getInternalConsultants();
@@ -589,7 +628,6 @@ export default {
     this.getPrograms();
     this.geInstructions();
   },
-
   methods: {
     validateSize,
     async onSubmit() {
@@ -599,6 +637,7 @@ export default {
         let scheduleData = new FormData();
         scheduleData.append("id", this.scheduleData.id);
         scheduleData.append("schedule_time", this.scheduleData.schedule_time);
+        scheduleData.append("session", this.scheduleData.session);
         scheduleData.append("type", this.scheduleData.type);
         scheduleData.append("title", this.scheduleData.title);
         scheduleData.append("instruction", this.scheduleData.instruction);
@@ -609,6 +648,11 @@ export default {
         scheduleData.append("clients", this.scheduleData.clients);
         scheduleData.append("role", this.scheduleData.role);
         scheduleData.append("status", this.scheduleData.status);
+
+        if(this.is_reschedule != false) {
+          scheduleData.append("reschedule_id", this.is_reschedule);        
+        }
+
         if (this.schedule_id) {
           data = await axios.post(`/workflowschedules/${this.id}`, scheduleData, {
             headers: {
@@ -825,6 +869,13 @@ export default {
     viewAssignModal(workflow) {
       this.workflow = workflow;
       this.$refs["assign"].show();
+    },
+    async validateScheduleTypes(session){
+      if(session == 'Diet plan' || session == 'Video assignment') {
+        this.show_session_types = false;
+      }else{
+        this.show_session_types = true;      
+      }
     },
     async getConsultants() {
       try {

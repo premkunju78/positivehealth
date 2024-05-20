@@ -10,12 +10,13 @@ class Investigation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'client_id','test','user_id','active','files'
+        'client_id','test','user_id','active','files', 'meta'
     ];
 
     protected $casts = [
         'test' => 'array',
-        'files' => 'array'
+        'files' => 'array',
+        'meta' => 'array',
     ];
 
 }

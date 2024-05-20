@@ -28,11 +28,11 @@ class Vi
 
     public function call( $no1, $no2 )
     {
-        echo $no1.'<br/>';
-        echo $no2;
+        // echo $no1.'<br/>';
+        // echo $no2;
         if( $token = $this->getAuthToken())
         {
-            Http::withHeaders([
+            return Http::withHeaders([
                 'Authorization' => "Bearer $token",
             ])->get(self::BASE_URI.'CTC/Get', [
                 'username'=> 'prajanaa',

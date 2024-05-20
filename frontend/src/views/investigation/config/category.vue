@@ -62,6 +62,35 @@
                                 </validation-provider>
                             </b-col> -->
                         </b-row>
+                        <b-row>
+                            <b-col cols="12" md="6">
+                              <validation-provider
+                                #default="validationContext"
+                                name="type"
+                                rules="required"
+                              >
+                                <b-form-group label="Type" label-for="type">
+                                  <v-select
+                                    id="type-input"
+                                    :reduce="val => val.id"
+                                    :state="getValidationState(validationContext)"
+                                    v-model="categoryData.type"
+                                    :readonly="readonly"
+                                    :class="errors.type ? 'is-invalid' : ''"
+                                    :area-invalid="errors.type ? true : false"
+                                    :options="categoryTypesOptions" 
+                                  >
+                                  </v-select>
+                                  <b-form-invalid-feedback v-if="errors.type">
+                                    {{ errors.type[0] }}
+                                  </b-form-invalid-feedback>
+                                  <b-form-invalid-feedback v-else>
+                                    {{ validationContext.errors[0] }}
+                                  </b-form-invalid-feedback>
+                                </b-form-group>
+                              </validation-provider>
+                            </b-col>            
+                        </b-row>                        
                         <b-row style=" margin-top: 2%;">
                             <!-- Action Buttons -->
                             <b-button
@@ -132,6 +161,11 @@
                     <span class="text-primary">{{
                         data.item.name.toUpperCase()
                     }}</span>
+                </template>
+
+                <template #cell(type)="data">
+                    <span class="text-primary" v-if="data.item.type === 'onsite'">OnSite</span>
+                    <span class="text-primary" v-if="data.item.type === 'home-based'">Home Based</span>
                 </template>
 
                 <!-- Column: Actions -->
@@ -247,6 +281,10 @@ export default {
 			type: 'Create Category',
             readonly: false,
             errors: [],
+            categoryTypesOptions: [
+                { id: 'onsite', label: 'OnSite' },
+                { id: 'home-based', label: 'Home Based' },
+            ]
         };
     },
     directives: {
@@ -260,7 +298,7 @@ export default {
         const columns = [
             { key: "index", label: "Sr. No.", sortable: true },
             { key: "name", label: "Category Name", sortable: true },
-            //{ key: "description", label: "Category Description", sortable: true },
+            { key: "type", label: "Type", sortable: true },
             { key: "actions" }
         ];
         const categoryData = ref({
@@ -350,10 +388,16 @@ export default {
             this.category = category;
             this.categoryData.id  = category.id
             this.categoryData.name = category.name;
+            this.categoryData.type = category.type;
             this.categoryData.description = category.description;
+            window.scrollTo({ top: 0, behavior: "smooth" });
 		},
 
 		async handleDeleteCategory(id){
+            if(!confirm('Are you sure!')) {
+               return ;
+            }
+            
 			try {
                 const data = await axios.delete(`/testCategory/${id}`);
                 this.$toast({

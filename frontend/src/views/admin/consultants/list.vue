@@ -526,6 +526,7 @@ export default {
         this.$nextTick(() => {
           this.$refs["assign"].hide();
         });
+        this.getList();
       } catch (err) {
         console.log(err);
       }

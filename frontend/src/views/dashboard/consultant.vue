@@ -48,12 +48,21 @@
       </b-row>
     </section>
     <section id="dashboard-contents"></section>
+    <b-modal id="program-actions-modal" ref="success-upgrade-modal" hide-footer no-close-on-backdrop>
+      <b-img
+        fluid
+        :src="msgSentImg"
+        alt="Message Sent"
+        style="max-height: 224px;"
+      />
+      <h4 class="header">Congratulations on becoming our Premium Consultant!<br/>Your account will be updated soon.</h4>
+    </b-modal>
   </div>
 </template>
 
 <script>
 import { mapActions, mapGetters } from "vuex";
-import { BRow, BCol, BCard, BCardText, BLink } from "bootstrap-vue";
+import { BRow, BCol, BCard, BCardText, BLink, VBModal, BModal, BImg } from "bootstrap-vue";
 import Statics from "./statics.vue";
 import Appointment from "./appointment.vue";
 import LineChart from "./chart.vue";
@@ -92,6 +101,9 @@ export default {
     Program,
     TodaySchedule,
     Feedback,
+    VBModal,
+    BModal,
+    BImg
   },
   data() {
     return {
@@ -122,6 +134,7 @@ export default {
       meetup: [],
       affirmation: "",
       notifications: [],
+      msgSentImg: require('@/assets/images/consultant/message-sent.png'),
     };
   },
   computed: {
@@ -136,6 +149,10 @@ export default {
       const { data } = await axios.get(`notification/${this.$store.state.auth.user.id}`);
       console.log(data);
       this.notifications = data.notifications;
+
+      if(this.$route.query.upgraded) {
+        this.$refs["success-upgrade-modal"].show();            
+      }
     },
     async fetchAffirmation() {
       const { data } = await axios.get(`affirmation/today`);
@@ -145,4 +162,8 @@ export default {
 };
 </script>
 
-<style></style>
+<style>
+#program-actions-modal .modal-body {
+  text-align: center;
+}
+</style>

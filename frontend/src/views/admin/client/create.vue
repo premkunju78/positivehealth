@@ -242,7 +242,14 @@
               </b-col>
               <b-col cols="12" md="4">
                 <b-form-group label-for="city" label="City">
-                  <b-form-input id="city" v-model="userData.city" placeholder="city" />
+                  <v-select
+                    v-model="userData.city"
+                    :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                    :options="cityOptions"
+                    :reduce="(val) => val.id"
+                    :clearable="false"
+                    input-id="referred-city"
+                  />
                 </b-form-group>
               </b-col>
               <b-col cols="12" md="4">
@@ -360,6 +367,10 @@ export default {
         { text: "Married", value: "Married" },
         { text: "Single", value: "Single" },
       ],
+      cityOptions: [
+        { id: "Bengaluru", label: "Bengaluru" },
+        { id: "Hyderabad", label: "Hyderabad" },
+      ]
     };
   },
   computed: {

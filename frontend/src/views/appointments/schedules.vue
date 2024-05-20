@@ -7,8 +7,8 @@
         <!-- Table Top -->
         <b-row>
 
+          <!--
 
-          <!-- Per Page -->
           <b-col cols="12" md="6" class="d-flex align-items-center justify-content-start mb-1 mb-md-0">
             <ul class="nav nav-tabs nav-justified" id="myTab2" role="tablist">
               <li class="nav-item">
@@ -23,6 +23,8 @@
               </li>
             </ul>
           </b-col>
+
+          -->
 
           <!-- Search -->
           <b-col cols="12" md="6">
@@ -149,7 +151,29 @@ export default {
     } else {
       this.tableColumns[3].label = "To"
     }
-    this.fetchSchedules('upcoming', false);
+
+    if(this.$route.name == 'todays-schedules') {
+      this.tabId = 'todays';
+    }else if(this.$route.name == 'past-schedules') {
+      this.tabId = 'past';
+    }else if(this.$route.name == 'upcoming-schedules') {
+      this.tabId = 'upcoming';
+    }
+
+    this.fetchSchedules(this.tabId, false);
+  },
+  watch:{
+    $route (to, from){
+      if(this.$route.name == 'todays-schedules') {
+        this.tabId = 'todays';
+      }else if(this.$route.name == 'past-schedules') {
+        this.tabId = 'past';
+      }else if(this.$route.name == 'upcoming-schedules') {
+        this.tabId = 'upcoming';
+      }
+
+      this.fetchSchedules(this.tabId, false);
+    }
   },
   computed: {
     user_id: function () {
@@ -158,14 +182,13 @@ export default {
   },
   methods: {
     async fetchSchedules(type, past) {
-      try {
-        this.tabId = type;
+      try { 
         if (this.tabId == 'upcoming') {
           this.tableColumns[3].label = "Duration"
         } else {
           this.tableColumns[3].label = "To"
         }
-        const { data } = await axios.get(`/bookings/list?past=${past}`, { params: { id: this.user_id } });
+        const { data } = await axios.get(`/bookings/list?type=${type}`, { params: { id: this.user_id } });
         this.items = data.schedules;
         this.totalRows = data.totalRows;
       } catch {

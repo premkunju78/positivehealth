@@ -185,6 +185,10 @@ export default {
     if (this.url) {
       this.getBannerLogo(this.url);
     }
+    
+    if(this.$route.query.group_id) {
+      this.group_id = this.$route.query.group_id
+    }
   },
   setup() {
     // App Name
@@ -208,6 +212,7 @@ export default {
       // validation rulesimport store from '@/store/index'
       required,
       processing: false,
+      group_id: ''
     };
   },
   computed: {
@@ -240,6 +245,7 @@ export default {
           password: this.password,
           device_name: this.device_name,
           url: this.url,
+          group_id: this.group_id
         })
         .then((response) => {
           this.signIn(response);

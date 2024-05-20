@@ -49,6 +49,11 @@ export default [{
             route: 'cis',
             permission: ['view-healthcoaches'],
         },
+        {
+            title: 'Diagnostic Partner',
+            route: 'dh',
+            permission: ['view-healthcoaches'],
+        },
     ],
 }, 
 {
@@ -233,7 +238,15 @@ export default [{
             route: 'enquiries'
         },
         {
+            title: 'Enquiries',
+            route: 'program-enquiries'
+        },
+        {
             title: 'Testimonials',
+        },
+        {
+            title: 'Workshop Calendar',
+            route: 'workshopcalendars',
         }
     ],
  },

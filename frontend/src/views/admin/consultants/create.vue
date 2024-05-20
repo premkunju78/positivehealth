@@ -518,6 +518,11 @@
                   </tags-input>
                 </b-form-group>
               </b-col>
+              <b-col cols="12" md="12">
+                <b-form-group label="Notes" label-for="languages">
+                  <b-form-textarea id="notes" v-model="userData.notes" rows="4" placeholder="notes" />
+                </b-form-group>
+              </b-col>
             </b-row>
           </b-col>
         </b-row>
@@ -838,6 +843,7 @@ export default {
         userData.append("skills", JSON.stringify(this.userData.skills));
         userData.append("languages", JSON.stringify(this.userData.languages));
         userData.append("bio", this.userData.bio);
+        userData.append("notes", this.userData.notes);
         if (this.id) {
           data = await axios.post(`/consultants/${this.id}`, userData, {
             headers: {

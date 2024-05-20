@@ -1,8 +1,10 @@
 <template>
-  <b-card title="Book your Appointments">
+  <b-card title="Book your Appointments with">
+    <h4>Consultant Name: {{ associated_consultant.name }} ({{ associated_consultant.detail.specialized_in }})</h4>
+    <br/>
     <validation-observer #default="{ handleSubmit }" ref="refFormObserver">
         <!-- User Info: Input Fields -->
-        <b-form @submit.prevent="handleSubmit(onSubmit)">
+        <b-form @submit.prevent="handleSubmit(onSubmit)" v-if="AppointmentData.selectedUser == false">
           <b-row>
             <!-- Field: Roles -->
             <b-col cols="12" md="4">
@@ -174,6 +176,7 @@ export default {
       roleOptions:[],
       roleUsers:[],
       showCalendar: false,
+      associated_consultant: false
     }
 
   },
@@ -256,6 +259,7 @@ export default {
     this.getRoles().then(() => {
       if( this.id && this.role ){
         this.AppointmentData.selectedRole = this.role;
+        this.getAssociatedConsultant()
         this.getRoleUsers()
         .then( () => {
           this.AppointmentData.selectedUser = this.id;
@@ -263,7 +267,7 @@ export default {
         })
       }
     })
-   
+
   },
   methods: {
     async getRoles() {
@@ -271,6 +275,14 @@ export default {
 
         const {data} = await axios.get('/roles/list');
         this.roleOptions = data.roles;
+      } catch( err ) {
+        console.log(err)
+      }
+    },
+    async getAssociatedConsultant(){
+      try {
+        const {data} = await axios.get(`/consultant/${this.id}`);
+        this.associated_consultant = data.user;
       } catch( err ) {
         console.log(err)
       }

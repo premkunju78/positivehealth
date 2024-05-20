@@ -45,7 +45,7 @@
                   {{ userprogram.hc }}
                 </td>
                 <td>
-                  <b-form-group label="" label-cols="10" class="status_Text" v-if="$store.state.auth.user.role_id == 10 ||
+                  <b-form-group label="" label-cols="10" class="status_Text" v-if="$store.state.auth.user.role_id == 10 || $store.state.auth.user.role_id ||
                     $store.state.auth.user.is_upgraded == 11
                     ">
                     <b-dropdown variant="link" no-caret :right="$store.state.appConfig.isRTL">
@@ -60,6 +60,10 @@
                         @click="updatestatus(userprogram.id, 'Completed')">
                         <span class="align-middle ml-50">Completed</span>
                       </b-dropdown-item>
+                      <b-dropdown-item v-if="userprogram.status != 'In-Progress'" 
+                        @click="updatestatus(userprogram.id, 'In-Progress')">
+                        <span class="align-middle ml-50">In-Progress</span>
+                      </b-dropdown-item>
                     </b-dropdown>
                   </b-form-group>
                   <span v-else>{{ userprogram.status }}</span>
@@ -72,14 +76,13 @@
           </div>
         </app-collapse-item>
 
-        <app-collapse-item title="Appointments" v-permission="['view-appointments']"
-          v-if="paidprograms.length && is_consultant != '1' && $store.state.auth.user.role_id != 2">
+        <app-collapse-item title="Appointments">
           <b-button v-ripple.400="'rgba(255, 255, 255, 0.15)'" variant="success"
             :to="{ name: 'clientSchedules', props: { userId: this.id } }">
             Appointments
           </b-button>
         </app-collapse-item>
-        <app-collapse-item title="Session schedule" v-permission="['view-workflows']" v-if="paidprograms.length && $store.state.auth.user.role_id != 2">
+        <app-collapse-item title="Session schedule">
           <b-button v-ripple.400="'rgba(255, 255, 255, 0.15)'" variant="success"
             :to="{ name: 'workFlow', props: { userId: this.id } }">
             Session schedule
@@ -137,7 +140,7 @@
           </b-button>
         </app-collapse-item>
 
-        <app-collapse-item title="Cross Referral" v-if="upgraded && paidprograms.length">
+        <app-collapse-item title="Cross Referral">
           <b-button v-ripple.400="'rgba(255, 255, 255, 0.15)'" variant="success"
             :to="{ name: 'crs', props: { id: this.id } }">
             Cross Referral

@@ -1,0 +1,1 @@
+{"type":"session_stop","trans_date":1714237620340,"room_id":"662cd63b839e3048893404eb","conf_num":"283740005411","concurrent_sessions":{"total_sessions":0},"app_id":"6186576268236c1eff7f3613"}

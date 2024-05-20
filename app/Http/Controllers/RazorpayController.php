@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\RoleUser;
+use App\Models\UserDetail;
 use App\Models\LeadProgram;
 use App\Models\PackageUser;
+use App\Models\ClientGroup;
+use App\Models\ClientGroupMapping;
+use App\Models\ClientGroupUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Razorpay\Api\Api;
@@ -97,13 +103,70 @@ class RazorpayController extends Controller
 			'id' => 'sometimes'
 		]);
 
+		if ($request->id) {			
+
+	        if (base64_decode($request->id, true) !== false) {
+	            $request->id = base64_decode($request->id);
+	        }
+
+			if ($request->for_external) {
+		        $groupProgram = ClientGroup::find($request->id);
+				if (!$groupProgram) {
+					return response()->json([
+						'success' => false,
+						'mesage' => 'Please provide valid details'
+					], 400);
+				}
+			} else {
+				$LeadProgram =  LeadProgram::find($request->id);
+				if (!$LeadProgram) {
+					return response()->json([
+						'success' => false,
+						'mesage' => 'Please provide valid details'
+					], 400);
+				}
+		    }
+
+			$response = $this->api->order->create($request->only(['amount', 'currency']));
+			if ($response->id && isset($LeadProgram)) {
+				$LeadProgram->meta = ['order_id' => $response->id];
+				$LeadProgram->save();
+			}
+
+			if ($response->id && isset($groupProgram)) {
+				$groupProgram->meta = ['order_id' => $response->id];
+				$groupProgram->save();
+			}
+
+			return response()->json([
+				'success' => true,
+				'order' => $response->toArray()
+			]);
+
+		} else {
+			$response = $this->api->order->create($request->only(['amount', 'currency']));
+			return response()->json([
+				'success' => true,
+				'order' => $response->toArray()
+			]);
+		}
+	}
+
+	public function consultantorder(Request $request)
+	{
+		$request->validate([
+			'amount' => 'required',
+			'currency' => 'required',
+			'id' => 'sometimes'
+		]);
+
 		if ($request->id) {
-			$LeadProgram =  LeadProgram::find($request->id);
-			if ($LeadProgram) {
+			$user_detail = UserDetail::where('user_id', $request->id)->first();
+			if ($user_detail) {
 				$response = $this->api->order->create($request->only(['amount', 'currency']));
 				if ($response->id) {
-					$LeadProgram->meta = ['order_id' => $response->id];
-					$LeadProgram->save();
+					$user_detail->meta = ['order_id' => $response->id];
+					$user_detail->save();
 				}
 				return response()->json([
 					'success' => true,
@@ -123,10 +186,61 @@ class RazorpayController extends Controller
 		}
 	}
 
+	public function consultantpayment(Request $request, $user_id)
+	{  		
+		try {
+			$user_detail = UserDetail::where('user_id', $user_id)->first();
+			$meta = json_decode($user_detail->meta);
+			$generated_signature = hash_hmac('sha256', $meta->order_id . "|" . $request->razorpay_payment_id, config('services.razorpay.secret'));
+
+			if ($generated_signature == $request->razorpay_signature) {
+				\App\Models\UserDetail::where('user_id', $user_id)->update(['is_upgraded' => 1]);
+	            return response()->json([
+	                'success' => true,
+	                'message' => 'Consultant access updated successfully'
+	            ]);
+	            exit();
+			}
+
+		}catch (\Exception $e) {
+			DB::rollback();
+			Log::debug('Error while processing payment request');
+			Log::debug($e->getMessage());
+			return response(['success' => false, 'message' => 'something went wrong, Please try after some time']);
+		}
+	}
+
 	public function leadpayment(Request $request)
 	{
 		Log::debug('Lead Payment Initiator:' . $request->id);
 		DB::beginTransaction();
+
+        if (base64_decode($request->id, true) !== false) {
+            $request->id = base64_decode($request->id);
+        }
+		
+		if ($request->for_external) {
+	        $groupProgram = ClientGroup::find($request->id);
+			$meta = json_decode($groupProgram->meta);
+			$generated_signature = hash_hmac('sha256', $meta->order_id . "|" . $request->razorpay_payment_id, config('services.razorpay.secret'));
+
+			if ($generated_signature == $request->razorpay_signature) {
+				return response()->json([
+					'success' => true,
+					'message' => 'payment processed successfully!'
+				]);
+
+				exit();
+			}
+			
+			return response()->json([
+				'success' => false,
+				'message' => 'Payment request from invalid source'
+			], 500);
+
+			exit();
+		}
+
 		try {
 			$LeadProgram =  LeadProgram::find($request->id);
 			$lead = \App\Models\Lead::find($LeadProgram->lead_id);

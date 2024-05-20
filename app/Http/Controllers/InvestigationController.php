@@ -21,10 +21,16 @@ class InvestigationController extends Controller
         $alliance_partners = CoordinatorAlliancepartner::where('coordinator_id', auth()->user()->id)->pluck('alliancepartner_id');
         $alliance_clients = DB::table('alian_client')->whereIn('aliance_id', $alliance_partners)->pluck('client_id');
 
-        $investigation =  Investigation::select('investigations.*', 'users.name as consultant', 'user_details.specialized_in', 'patients.name as patient')
+        $investigation =  Investigation::select('investigations.*', 'users.name as consultant', 'user_details.specialized_in', 'patients.name as patient', 'patients.phone', 'alliance_details.company_name as ap_company', 'dh_user.name as dp_name','sc_user.name as sample_collector')
             ->join('users', 'users.id', '=', 'investigations.user_id')
             ->leftJoin('user_details', 'investigations.user_id', '=', 'user_details.user_id')
             ->join('users as patients', 'patients.id', '=', 'investigations.client_id')
+            ->leftJoin('alian_client', 'alian_client.client_id', '=', 'investigations.client_id')
+            ->leftJoin('user_details as alliance_details', 'alliance_details.user_id', '=', 'alian_client.aliance_id')
+            ->leftJoin('diagnostichead_alliance as dha', 'dha.ap_id', '=', 'alian_client.aliance_id')
+            ->leftJoin('users as dh_user', 'dh_user.id', '=', 'dha.dh_id')
+            ->leftJoin('sample_collectors_investigations as sc_inv', 'sc_inv.inv_id', '=', 'investigations.id')
+            ->leftJoin('users as sc_user', 'sc_user.id', '=', 'sc_inv.sc_id')
             ->when($role === 3, function ($q) {
                 $q->where('investigations.client_id', auth()->user()->id);
             })
@@ -38,10 +44,15 @@ class InvestigationController extends Controller
                 // $alliance_partners = CoordinatorAlliancepartner::where('coordinator_id', auth()->user()->id)->pluck('alliancepartner_id');
                 // $alliance_clients = DB::table('alian_client')->whereIn('aliance_id', $alliance_partners)->pluck('client_id');
                 // $q->whereIn('investigations.client_id', $alliance_clients);
-            })->when($role === 17, function ($q) {
-                $dh_clients = DB::table('diagnostichead_clients')->whereIn('dh_id', auth()->user()->id)->pluck('client_id');
-                $q->whereIn('investigations.client_id', $dh_clients);
-            })->where([
+            })
+            ->when($role === 17, function ($q) {
+                // $dh_clients = DB::table('diagnostichead_clients')->whereIn('dh_id', auth()->user()->id)->pluck('client_id');
+                $q->whereIn('investigations.payment_status', ['completed']);
+            })
+            ->when($role === 18, function ($q) {
+                $q->whereIn('sc_inv.sc_id', [auth()->user()->id]);
+            })
+            ->where([
                 'investigations.active' => 1,
             ])
             ->orderBy('investigations.id', 'desc');
@@ -50,7 +61,7 @@ class InvestigationController extends Controller
         $investigations = $i1->limit($request->per_page)->offset(($request->page - 1) * $request->per_page)->get();
         foreach ($investigations as $key => $investigation) {
             $alian_client = DB::table('alian_client')->select('alliancepartner.name as alliance_partner')->join('users as alliancepartner', 'alliancepartner.id', '=', 'alian_client.aliance_id')->where('alian_client.client_id', $investigation->client_id)->first();
-            $investigations[$key]->alliance_partner = $alian_client->alliance_partner;
+            $investigations[$key]->alliance_partner = $alian_client ? $alian_client->alliance_partner : '';
             $investigations[$key]->no = (!empty(explode('-', $investigation->no)[1])) ? explode('-', $investigation->no)[1] : $investigation->no;
         }
 
@@ -62,20 +73,27 @@ class InvestigationController extends Controller
         ]);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
         $role = auth()->user()->role_id;
         $is_consultant = \App\Models\Role::find(auth()->user()->role_id)->is_consultant;
+        $is_client = $request->client_id;
 
         $investigation = Investigation::where('investigations.id', $id)
             ->select('investigations.*')
-            ->when(($role === 3 || $role === 10 || $role === 11 || $is_consultant == 1), function ($q) {
+            ->when(($role === 3 || $role === 10 || $role === 11 || $role === 1 || $is_consultant == 1), function ($q) {
                 $q->join('users', 'users.id', '=', 'investigations.user_id')
                     ->join('users as client', 'client.id', '=', 'investigations.client_id')
                     ->leftJoin('user_details', 'users.id', '=', 'user_details.user_id')
                     ->leftJoin('user_details as client_details', 'client.id', '=', 'client_details.user_id')
                     ->addSelect(
                         'users.name as consultant',
+                        'users.email as consultant_email',
+                        'user_details.specialized_in as consultant_specialized_in',
+                        'user_details.clinic_name as consultant_clinic',
+                        'user_details.pincode as consultant_pincode',
+                        DB::raw("concat(user_details.address,', ',user_details.city,'-',user_details.state,' ','India') as consultant_address"),
+                        'client_details.gender as patient_gender',
                         'user_details.specialized_in',
                         'users.email',
                         'users.phone',
@@ -91,7 +109,7 @@ class InvestigationController extends Controller
             })->first();
 
         $test_data = (!empty($investigation->test_data)) ? json_decode($investigation->test_data, TRUE) : [];
-        if ($role === 3 || $role === 10 || $role === 11 || $is_consultant == 1) {
+        if ($role === 3 || $role === 10 || $role === 11 || $role === 1 || $is_consultant == 1) {
             $tests = [];
             foreach ($investigation->test as $key => $test) {
                 if (empty($test)) {
@@ -100,12 +118,26 @@ class InvestigationController extends Controller
                 $tests = array_merge($tests, $test);
             }
 
-            $advice = Test::whereIn('id', $tests)->select('name', 'id')->get();
+            $advice = Test::whereIn('tests.id', $tests)
+            ->select('tests.name', 'tests.id')
+            ->when($role === 3 && $is_client, function($q) use($is_client) {
+                $q
+                ->leftJoin('alian_client', 'alian_client.client_id', '=', DB::raw($is_client))
+                ->leftJoin('diagnostichead_alliance as dha', 'dha.ap_id', '=', 'alian_client.aliance_id')
+                ->leftJoin('dh_investigation_tests', function($join) {
+                    $join
+                    ->on('dh_investigation_tests.user_id', '=', 'dha.dh_id')
+                    ->on('dh_investigation_tests.sub_category_id', '=', 'tests.id');
+                })
+                ->addSelect('dh_investigation_tests.cost');
+            })
+            ->get();
             $advice_data = [];
             foreach ($advice as $advice) {
                 $advice_data[] = array(
                     'id' => $advice->id,
                     'name' => $advice->name,
+                    'cost' => $advice->cost ?? 0,
                     'unit' => (!empty($test_data[$advice->id]['unit'])) ? $test_data[$advice->id]['unit'] : '',
                     'result' => (!empty($test_data[$advice->id]['result'])) ? $test_data[$advice->id]['result'] : '',
                     'ref_range_min' => (!empty($test_data[$advice->id]['ref_range_min'])) ? $test_data[$advice->id]['ref_range_min'] : '',
@@ -271,6 +303,55 @@ class InvestigationController extends Controller
             ]);
         }
         return true;
+    }
+
+    public function scassignment(Request $request) {
+        $request->validate([
+            'sc_id' => 'required',
+            'inv_id' => 'required'
+        ]);
+
+        $is_exists = DB::table('sample_collectors_investigations')->where([
+            'inv_id' => (int) $request->input('inv_id')
+        ])->exists();
+
+        if ($is_exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Already Assigned!'
+            ]);
+
+            exit();
+        }
+
+        if (!$is_exists) {
+            DB::table('sample_collectors_investigations')->insert([
+                'sc_id' => (int) $request->input('sc_id'),
+                'inv_id' => (int) $request->input('inv_id')
+            ]);
+
+            Investigation::where('id', $id)->update(['status' => 'assigned']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Assigned successfully'
+        ]);
+    }
+
+    public function updatestatus(Request $request, $id) {
+        $request->validate([
+            'status' => 'required'
+        ]);
+
+        $status = $request->input('status');
+
+        Investigation::where('id', $id)->update(['status' => $status]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status updated successfully'
+        ]);
     }
 
     public function removeFile(Request $request, int $id)

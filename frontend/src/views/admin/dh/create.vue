@@ -84,6 +84,23 @@
                 </validation-provider>
               </b-col>
 
+              <b-col cols="12" md="4">
+                <!-- Percentage -->
+                <validation-provider #default="validationContext" name="Percentage" rules="required">
+                  <b-form-group label="Percentage" label-for="percentage">
+                    <b-form-input id="percentage" v-model="userData.percentage" type="number" placeholder="%"
+                      :state="getValidationState(validationContext)" :class="errors.percentage ? 'is-invalid' : ''"
+                      :area-invalid="errors.percentage ? true : false" />
+                    <b-form-invalid-feedback v-if="errors.percentage">
+                      {{ errors.percentage[0] }}
+                    </b-form-invalid-feedback>
+                    <b-form-invalid-feedback v-else>
+                      {{ validationContext.errors[0] }}
+                    </b-form-invalid-feedback>
+                  </b-form-group>
+                </validation-provider>
+              </b-col>
+
               <!-- idproof -->
               <b-col cols="12" md="6" class="mt-2 mb-2">
                 <!-- media -->
@@ -227,6 +244,19 @@
               <b-col cols="12" md="4">
                 <b-form-group label-for="city" label="City">
                   <b-form-input id="city" v-model="userData.city" placeholder="city" />
+                </b-form-group>
+              </b-col>
+              <b-col cols="12" md="4">
+                <b-form-group label-for="city-presence" label="City Presence">
+                  <v-select
+                    v-model="userData.available_cities"
+                    :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                    :options="cityOptions"
+                    :reduce="(val) => val.id"
+                    :clearable="false"
+                    input-id="referred-presence-city" 
+                    multiple
+                  />
                 </b-form-group>
               </b-col>
               <b-col cols="12" md="4">
@@ -462,6 +492,10 @@ export default {
         { text: "Female", value: "female" },
       ],
       maxSize: 2097152,
+      cityOptions: [
+        { id: "Bengaluru", label: "Bengaluru" },
+        { id: "Hyderabad", label: "Hyderabad" },
+      ],
     };
   },
   setup(props) {
@@ -612,6 +646,9 @@ export default {
         userData.append("website_name", this.userData.website_name);
         userData.append("area_of_interest", this.userData.area_of_interest);
         userData.append("service_areas", JSON.stringify(this.userData.service_areas));
+        userData.append("percentage", this.userData.percentage);
+        userData.append("available_cities", this.userData.available_cities);
+
         if (this.id) {
           data = await axios.post(`/dh/${this.id}`, userData, {
             headers: {
@@ -646,6 +683,15 @@ export default {
         const { data } = await axios.get(`/dh/${this.id}`);
         this.userData = data.dh;
         if (this.userData.service_areas) {
+          let available_cities = JSON.parse(data.dh.available_cities)
+          
+          this.userData.available_cities = [];
+          available_cities.forEach((value, index) => {
+            this.userData.available_cities.push(value.city)
+          });
+
+          console.log(this.userData.available_cities)
+          
           this.userData.service_areas = JSON.parse(data.dh.service_areas)
         } else {
           this.userData.service_areas = []

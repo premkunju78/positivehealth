@@ -397,6 +397,62 @@ export const asyncRoutes = [{
     },
 },
 {
+    path: '/investigation/items',
+    name: 'items-investigations',
+    component: () =>
+        import('@/views/admin/dh/investigations-list.vue'),
+    meta: {
+        pageTitle: 'Investigations',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Investigations',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/healthpackages/items',
+    name: 'items-healthpackages',
+    component: () =>
+        import('@/views/admin/dh/healthpackages-list.vue'),
+    meta: {
+        pageTitle: 'Health Packages',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Healthpackages',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/centres/items',
+    name: 'items-centres',
+    component: () =>
+        import('@/views/admin/dh/centres-list.vue'),
+    meta: {
+        pageTitle: 'Centres',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Centres',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/onsitetests/items',
+    name: 'items-onsitetests',
+    component: () =>
+        import('@/views/admin/dh/onsitetests-list.vue'),
+    meta: {
+        pageTitle: 'Onsite Tests',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Onsite Tests',
+            active: true,
+        },],
+    },
+},
+{
     path: '/dh/create',
     name: 'dh-create',
     component: () =>
@@ -1238,6 +1294,7 @@ export const asyncRoutes = [{
         contentRenderer: 'sidebar-left',
         contentClass: 'email-application',
         navActiveLink: 'casesheet-list',
+        clientModule: true
 
     },
     props: true
@@ -1259,6 +1316,21 @@ export const asyncRoutes = [{
 },
 {
     path: '/crs/:id',
+    name: 'crs',
+    component: () =>
+        import('@/views/crs/index.vue'),
+    meta: {
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Cross Referral',
+            active: true,
+        },],
+
+    },
+    props: true
+},
+{
+    path: '/crs/:id/:consultant_id',
     name: 'crs',
     component: () =>
         import('@/views/crs/index.vue'),
@@ -1381,10 +1453,10 @@ export const asyncRoutes = [{
     component: () =>
         import('@/views/workflow/viewSchedules.vue'),
     meta: {
-        pageTitle: 'Session schedules',
+        pageTitle: 'Appointments Schedules',
         middleware: "auth",
         breadcrumb: [{
-            text: 'Session schedules',
+            text: 'Appointments Schedules',
             active: true,
         },],
     },
@@ -1417,7 +1489,20 @@ export const asyncRoutes = [{
         },],
     },
 },
-
+{
+    path: '/workshopcalendars',
+    name: 'workshopcalendars',
+    component: () =>
+        import('@/views/workflow/workFlowCalendars.vue'),
+    meta: {
+        pageTitle: 'Today Schedules',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Today Schedules',
+            active: true,
+        },],
+    },
+},
 {
     path: '/schedules/list',
     name: 'schedules',
@@ -1425,6 +1510,48 @@ export const asyncRoutes = [{
         import('@/views/appointments/schedules.vue'),
     meta: {
         pageTitle: 'Schedules',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Schedules',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/schedules/todays',
+    name: 'todays-schedules',
+    component: () =>
+        import('@/views/workflow/viewSchedules.vue'),
+    meta: {
+        pageTitle: 'Today\'s Appointments',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Schedules',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/schedules/past',
+    name: 'past-schedules',
+    component: () =>
+        import('@/views/workflow/viewSchedules.vue'),
+    meta: {
+        pageTitle: 'Past Appointments',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Schedules',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/schedules/upcoming',
+    name: 'upcoming-schedules',
+    component: () =>
+        import('@/views/workflow/viewSchedules.vue'),
+    meta: {
+        pageTitle: 'Upcoming Appointments',
         middleware: "auth",
         breadcrumb: [{
             text: 'Schedules',
@@ -1455,7 +1582,7 @@ export const asyncRoutes = [{
     component: () =>
         import('@/views/workflow/list.vue'),
     meta: {
-        pageTitle: 'Session Schedules',
+        pageTitle: 'Appointments Schedules',
         middleware: "auth",
         breadcrumb: [{
             text: 'Schedule',
@@ -1472,7 +1599,7 @@ export const asyncRoutes = [{
     component: () =>
         import('@/views/workflow/calendar.vue'),
     meta: {
-        pageTitle: 'Session Schedules',
+        pageTitle: 'Appointments Schedules',
         middleware: "auth",
         breadcrumb: [{
             text: 'Schedule',
@@ -1527,6 +1654,24 @@ export const asyncRoutes = [{
             text: 'Investigations',
             active: true,
         },],
+        clientModule: true,
+    },
+    props: true,
+},
+
+{
+    path: '/all-investigation/',
+    name: 'all-investigations',
+    component: () =>
+        import('@/views/investigation/index.vue'),
+    meta: {
+        pageTitle: 'Investigations',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Investigations',
+            active: true,
+        },],
+        clientModule: true,
     },
     props: true,
 },
@@ -1581,7 +1726,7 @@ export const asyncRoutes = [{
     props: true,
 },
 {
-    path: '/investigation/view/:id',
+    path: '/investigation/view/:id/:client_id',
     name: 'viewInvestigation',
     component: () =>
         import('@/views/investigation/view.vue'),
@@ -1609,6 +1754,7 @@ export const asyncRoutes = [{
             active: true,
         },],
         backButton: '/client/:id/modules',
+        clientModule: true
     },
     props: true,
 },
@@ -1660,7 +1806,7 @@ export const asyncRoutes = [{
     props: true,
 },
 {
-    path: '/prescription/view/:id',
+    path: '/prescription/view/:id/:client_id',
     name: 'viewPrescription',
     component: () =>
         import('@/views/prescription/view.vue'),
@@ -1681,7 +1827,7 @@ export const asyncRoutes = [{
     component: () =>
         import('@/views/investigation/config/category.vue'),
     meta: {
-        pageTitle: 'Test Category',
+        pageTitle: 'Add Category',
         middleware: "auth",
         breadcrumb: [{
             text: 'Test Category',
@@ -1696,10 +1842,10 @@ export const asyncRoutes = [{
     component: () =>
         import('@/views/investigation/config/item.vue'),
     meta: {
-        pageTitle: 'Test Item',
+        pageTitle: 'Add Sub Category',
         middleware: "auth",
         breadcrumb: [{
-            text: 'Test Item',
+            text: 'Sub Category',
             active: true,
         },],
     },
@@ -1833,6 +1979,34 @@ export const asyncRoutes = [{
     props: true
 },
 {
+    path: '/ask-query',
+    name: 'ask-query',
+    component: () =>
+        import('@/views/enquiries/list.vue'),
+    meta: {
+        pageTitle: 'Ask Query',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Ask Query',
+            active: true,
+        },],
+    },
+},
+{
+    path: '/upgrade-to-premium',
+    name: 'upgrade-to-premium',
+    component: () =>
+        import('@/views/upgrade/plans.vue'),
+    meta: {
+        pageTitle: 'Upgrade To Premium',
+        middleware: "auth",
+        breadcrumb: [{
+            text: 'Upgrade To Premium',
+            active: true,
+        },],
+    },
+},
+{
     path: '/enquiries',
     name: 'enquiries',
     component: () =>
@@ -1841,7 +2015,7 @@ export const asyncRoutes = [{
         pageTitle: 'Queries',
         middleware: "auth",
         breadcrumb: [{
-            text: 'Queries Enquiries',
+            text: 'Queries',
             active: true,
         },],
     },
@@ -1855,7 +2029,7 @@ export const asyncRoutes = [{
         pageTitle: 'Enquiries',
         middleware: "auth",
         breadcrumb: [{
-            text: 'Queries Enquiries',
+            text: 'Enquiries',
             active: true,
         },],
     },
@@ -1968,6 +2142,18 @@ export const asyncRoutes = [{
         import('@/views/programpayment.vue'),
     meta: {
         pageTitle: 'Payment',
+        layout: 'full',
+        middleware: "guest",
+    },
+    props: true
+},
+{
+    path: '/clients/payment/:randstring/:id',
+    name: 'clientspayment',
+    component: () =>
+        import('@/views/programpayment.vue'),
+    meta: {
+        pageTitle: 'Client Payment',
         layout: 'full',
         middleware: "guest",
     },

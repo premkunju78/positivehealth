@@ -194,6 +194,29 @@
                       </b-form-invalid-feedback>
                   </b-form-group>
               </validation-provider>
+              <validation-provider
+                  #default="validationContext"
+                  name="types"
+              >
+                  <b-form-group
+                      label="Communication Types"
+                      label-for="type"
+                      :state="getValidationState(validationContext)"
+                  >
+                      <v-select
+                          v-model="eventLocal.type"
+                          :dir="$store.state.appConfig.isRTL ? 'rtl' : 'ltr'"
+                          :options="typeLists"
+                          :reduce="val => val.value"
+                          multiple
+                          placeholder="Select Types"
+                          :clearable="true"
+                      />
+                      <b-form-invalid-feedback :state="getValidationState(validationContext)">
+                          {{ validationContext.errors[0] }}
+                      </b-form-invalid-feedback>
+                  </b-form-group>
+              </validation-provider>
             <b-form-group>
               <b-form-checkbox
                 v-model="eventLocal.group"
@@ -361,6 +384,10 @@ export default {
           { value: 50, 'label': '50 Min'},
           { value: 55, 'label': '55 Min'},
           { value: 60, 'label': '60 Min'},
+        ],
+        typeLists: [
+          { value: 'video', 'label': 'Video Consultation'},
+          { value: 'audio', 'label': 'Audio Consultation'}
         ]
     }
   },
